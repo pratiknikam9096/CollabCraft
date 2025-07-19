@@ -15,9 +15,7 @@ app.use(express.json())
 
 app.use(cors({
  origin: [
-	'http://localhost:5173',
-    'https://code-mitra-complier-6e16.vercel.app/'
-    
+	'https://collabcraft-1.onrender.com/'
   ], // Replace with your deployed frontend URL
   methods: ['GET', 'POST'],
   credentials: true
@@ -30,8 +28,7 @@ const server = http.createServer(app)
 const io = new Server(server, {
 	cors: {
 		 origin: [
-      'http://localhost:5173',
-      'https://code-mitra-complier-6e16.vercel.app/'
+      'https://collabcraft-1.onrender.com/'
     ], // Replace with your deployed frontend URL
         methods: ['GET', 'POST']
 	},
