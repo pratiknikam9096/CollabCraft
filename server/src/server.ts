@@ -15,7 +15,7 @@ app.use(express.json())
 
 app.use(cors({
  origin: [
-	'https://collabcraft-1.onrender.com'
+	'https://collabcraft-cbqu.onrender.com/'
   ], // Replace with your deployed frontend URL
   methods: ['GET', 'POST'],
   credentials: true
@@ -28,7 +28,7 @@ const server = http.createServer(app)
 const io = new Server(server, {
 	cors: {
 		 origin: [
-      'https://collabcraft-1.onrender.com'
+      'https://collabcraft-cbqu.onrender.com/'
     ], // Replace with your deployed frontend URL
         methods: ['GET', 'POST']
 	},
