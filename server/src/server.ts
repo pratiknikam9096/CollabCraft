@@ -14,7 +14,11 @@ const app = express()
 app.use(express.json())
 
 app.use(cors({
-  origin: 'https://code-mitra-complier-6e16.vercel.app/', // Replace with your deployed frontend URL
+ origin: [
+	'http://localhost:5173',
+    'https://code-mitra-complier-6e16.vercel.app/'
+    
+  ], // Replace with your deployed frontend URL
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -25,7 +29,10 @@ app.use(express.static(path.join(__dirname, "public"))) // Serve static files
 const server = http.createServer(app)
 const io = new Server(server, {
 	cors: {
-		origin: 'https://code-mitra-complier-6e16.vercel.app/', // Replace with your deployed frontend URL
+		 origin: [
+      'http://localhost:5173',
+      'https://code-mitra-complier-6e16.vercel.app/'
+    ], // Replace with your deployed frontend URL
         methods: ['GET', 'POST']
 	},
 	maxHttpBufferSize: 1e8,
@@ -266,7 +273,7 @@ io.on("connection", (socket) => {
 	})
 })
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3001
 
 app.get("/", (req: Request, res: Response) => {
 	// Send the index.html file
