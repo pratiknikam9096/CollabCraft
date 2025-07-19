@@ -21,7 +21,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(cors());
+
 app.use(express.static(path.join(__dirname, "public"))) // Serve static files
 
 const server = http.createServer(app)
