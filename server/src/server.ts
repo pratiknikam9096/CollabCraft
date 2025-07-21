@@ -31,7 +31,7 @@ const io = new Server(server, {
 		 origin: [
       'https://collabcraft-cbqu.onrender.com'
     ], // Replace with your deployed frontend URL
-        methods: ['GET', 'POST']
+        methods: ['GET', 'POST','PUT', 'DELETE', 'PATCH'],
 	},
 	maxHttpBufferSize: 1e8,
 	pingTimeout: 60000,
