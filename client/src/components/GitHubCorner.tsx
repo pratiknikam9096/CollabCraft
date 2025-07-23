@@ -1,26 +1,37 @@
 import { useSettings } from "@/context/SettingContext"
 import { useRunCode } from "@/context/RunCodeContext"
+import { useViews } from "@/context/ViewContext"
 import useWindowDimensions from "@/hooks/useWindowDimensions"
+import { VIEWS } from "@/types/view"
 import { PiPlay } from "react-icons/pi"
 
 function GitHubCorner() {
     const { showGitHubCorner } = useSettings()
     const { runCode, isRunning } = useRunCode()
+    const { setActiveView, setIsSidebarOpen } = useViews()
     const { width } = useWindowDimensions()
 
+    const handleRunClick = () => {
+        // Open the RUN view in sidebar
+        setActiveView(VIEWS.RUN)
+        setIsSidebarOpen(true)
+        // Execute the code
+        runCode()
+    }
+
     return (
-        <div className="fixed right-0 top-0 z-10 flex items-start">
+        <div className="fixed right-0 top-0 z-10 flex items-start gap-2">
             {/* Run Button */}
             <button
-                onClick={runCode}
+                onClick={handleRunClick}
                 disabled={isRunning}
-                className="mr-2 mt-4 flex items-center justify-center rounded-full bg-primary p-3 text-black shadow-lg transition-all duration-200 hover:bg-green-400 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-4 flex items-center justify-center rounded-full bg-primary p-2.5 text-black shadow-lg transition-all duration-200 hover:bg-green-400 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
                 title={isRunning ? "Running..." : "Run Code"}
                 style={{
-                    display: width > 640 ? "flex" : "none ",
+                    display: width > 640 ? "flex" : "none",
                 }}
             >
-                <PiPlay size={20} />
+                <PiPlay size={18} />
             </button>
 
             {/* GitHub Corner */}
