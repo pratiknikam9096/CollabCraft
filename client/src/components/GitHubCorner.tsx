@@ -17,7 +17,7 @@ function GitHubCorner() {
                 className="mr-2 mt-4 flex items-center justify-center rounded-full bg-primary p-3 text-black shadow-lg transition-all duration-200 hover:bg-green-400 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
                 title={isRunning ? "Running..." : "Run Code"}
                 style={{
-                    display: width > 640 ? "flex" : "none",
+                    display: width > 640 ? "flex" : "none ",
                 }}
             >
                 <PiPlay size={20} />
