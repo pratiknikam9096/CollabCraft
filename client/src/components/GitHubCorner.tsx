@@ -42,7 +42,7 @@ function GitHubCorner() {
                 target="_blank"
                 rel="noreferrer"
                 style={{
-                    display: showGitHubCorner && width > 640 ? "block" : "none",
+                    display: showGitHubCorner &&  width > 640 ? "block" : "none",
                 }}
             >
                 <svg
