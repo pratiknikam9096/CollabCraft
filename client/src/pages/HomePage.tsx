@@ -98,19 +98,5 @@ const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, titl
         </div>
     )
 }
-                    <img
-                        src={illustration}
-                        alt="Code Sync Illustration"
-                        className="mx-auto w-[250px] sm:w-[400px]"
-                    />
-                </div>
-                <div className="flex w-full items-center justify-center sm:w-1/2">
-                    <FormComponent />
-                </div>
-            </div>
-            {/* <Footer /> */}
-        </div>
-    )
-}
 
 export default HomePage
