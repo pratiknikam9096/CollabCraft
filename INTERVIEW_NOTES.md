@@ -239,6 +239,95 @@ The current version is a solid MVP, but these improvements would make it product
 
 I used React Error Boundaries to catch and display user-friendly error messages, and implemented comprehensive logging for debugging."
 
+### Q8: "What authentication system did you implement - sessions or JWT?"
+
+**Answer:** "Currently, the project uses a **simplified room-based authentication system** without traditional JWT or session-based auth. Here's how it works:
+
+**Current Implementation:**
+- Users join rooms with a username and room ID
+- Socket.IO manages user sessions through WebSocket connections
+- User state is maintained in memory on both client and server
+- No persistent authentication or user accounts
+
+**Why This Approach:**
+- **MVP Focus:** Prioritized core collaboration features over user management
+- **Simplicity:** Reduces complexity for proof-of-concept
+- **Real-time First:** Socket connections naturally handle session management
+- **No Data Persistence:** No need for user accounts in current version
+
+**Production Considerations:**
+If I were to implement proper authentication, I would choose **JWT** because:
+
+1. **Stateless:** Better for scaling across multiple servers
+2. **Real-time Friendly:** Can embed user info in token for Socket.IO
+3. **Microservices Ready:** Easy to validate tokens across services
+4. **Mobile Compatible:** Works well with mobile apps
+
+**Implementation Plan:**
+```javascript
+// JWT Authentication Flow
+const authMiddleware = (socket, next) => {
+  const token = socket.handshake.auth.token
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+    socket.userId = decoded.userId
+    socket.username = decoded.username
+    next()
+  } catch (err) {
+    next(new Error('Authentication error'))
+  }
+}
+
+io.use(authMiddleware)
+```
+
+**Why Not Sessions:**
+- **Scaling Issues:** Sticky sessions required for load balancing
+- **Real-time Complexity:** Harder to integrate with Socket.IO
+- **State Management:** Server-side session storage adds complexity
+
+This shows I understand the trade-offs and can make architectural decisions based on project requirements."
+
+### Q9: "How would you add user authentication to this project?"
+
+**Answer:** "I'd implement JWT-based authentication with the following architecture:
+
+**Backend Changes:**
+1. **User Model:** Add user registration/login endpoints
+2. **JWT Middleware:** Protect Socket.IO connections
+3. **Room Permissions:** Add room ownership and access control
+4. **Database Integration:** Store user accounts and room metadata
+
+**Frontend Changes:**
+1. **Auth Context:** Manage login state and token refresh
+2. **Protected Routes:** Redirect unauthenticated users
+3. **Token Storage:** Secure token storage with refresh logic
+4. **User Profile:** Add user management features
+
+**Socket.IO Integration:**
+```javascript
+// Client-side
+const socket = io(SERVER_URL, {
+  auth: {
+    token: localStorage.getItem('authToken')
+  }
+})
+
+// Server-side
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token
+  // Verify JWT and attach user info
+  socket.user = verifiedUser
+  next()
+})
+```
+
+This would enable features like:
+- Persistent user accounts
+- Room ownership and permissions
+- User history and saved projects
+- Better security and access control"
+
 ---
 
 ## 🔧 Technical Skills Demonstrated
