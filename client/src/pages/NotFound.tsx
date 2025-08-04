@@ -2,6 +2,7 @@ import illustration from "@/assets/illustration.svg"
 import { Link } from "react-router-dom"
 
 function NotFound() {
+    console.log("NotFound page rendered") // Debugging log
     return (
         <div className="min-h-screen bg-gradient-to-br from-dark via-dark to-darkHover">
             <div className="flex min-h-screen flex-col items-center justify-center gap-16 px-4">
