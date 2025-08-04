@@ -1,4 +1,5 @@
 import illustration from "@/assets/illustration.svg"
+// import heroimg from "@/assets/newheroimg.png"
 import FormComponent from "@/components/forms/FormComponent"
 import { PiPlay, PiCode, PiUsers, PiChatCircle } from "react-icons/pi"
 import { LuSparkles } from "react-icons/lu"
@@ -12,7 +13,7 @@ function HomePage() {
                     <div className="flex w-full animate-up-down justify-center sm:w-1/2 sm:pl-4">
                         <img
                             src={illustration}
-                            alt="Code Sync Illustration"
+                            alt="Collab Craft Illustration"
                             className="mx-auto w-[280px] drop-shadow-2xl sm:w-[450px]"
                         />
                     </div>

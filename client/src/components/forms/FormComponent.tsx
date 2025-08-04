@@ -90,9 +90,7 @@ const FormComponent = () => {
 
     return (
         <div className="w-full">
-            <div className="mb-8 flex justify-center">
-                <img src={logo} alt="CollabCraft Logo" className="h-16 w-auto"/>
-            </div>
+            
             <form onSubmit={joinRoom} className="flex w-full flex-col gap-6">
                 <input
                     type="text"
