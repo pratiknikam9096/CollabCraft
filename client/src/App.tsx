@@ -8,7 +8,7 @@ import NotFound from "./pages/NotFound"
 const App = () => {
     return (
         <>
-            <Router>
+            <Router basename="/">
                 <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/editor/:roomId" element={<EditorPage />} />
@@ -16,9 +16,7 @@ const App = () => {
                 </Routes>
             </Router>
             <Toast /> {/* Toast component from react-hot-toast */}
-           
         </>
     )
 }
-
 export default App
