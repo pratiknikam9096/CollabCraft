@@ -22,7 +22,7 @@ function GitHubCorner() {
     return (
         <div className="fixed right-0 top-0 z-10 flex items-start gap-2">
             {/* Run Button */}
-            <button
+{/*             <button
                 onClick={handleRunClick}
                 disabled={isRunning}
                 className="mt-4 flex items-center justify-center rounded-full bg-primary p-2.5 text-black shadow-lg transition-all duration-200 hover:bg-green-400 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
@@ -32,7 +32,7 @@ function GitHubCorner() {
                 }}
             >
                 <PiPlay size={18} />
-            </button>
+            </button> */}
 
             {/* GitHub Corner */}
             <a
