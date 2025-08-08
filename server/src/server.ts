@@ -286,6 +286,13 @@ app.use((req: Request, res: Response) => {
   res.status(404).sendFile(path.join(__dirname, "..", "public", "404.html"))
 })
 
+app.use((err: any, req: Request, res: Response, next: Function) => {
+  if (err.status === 404) {
+    res.status(404).sendFile(path.join(__dirname, "..", "public", "404.html"))
+  } else {
+    next(err)
+  }
+})
 server.listen(PORT, () => {
 	console.log(`Listening on port ${PORT}`)
 })
