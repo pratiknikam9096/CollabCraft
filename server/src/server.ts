@@ -15,9 +15,9 @@ app.use(express.json())
 
 app.use(cors({
  origin: [
-	'https://collabcraft-cbqu.onrender.com'
+	'https://collabcraft-cbqu.onrender.com','http://localhost:5173',
   ], // Replace with your deployed frontend URL
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }));
 
@@ -32,8 +32,12 @@ const server = http.createServer(app)
 const io = new Server(server, {
 	cors: {
 		 origin: [
+<<<<<<< HEAD
 			'localhost:5173',
 		'https://collabcraft-cbqu.onrender.com'
+=======
+      'https://collabcraft-cbqu.onrender.com', 'http://localhost:5173',
+>>>>>>> 2059fca8006f49612ea35e12e7c4b5e1b51251e6
     ], // Replace with your deployed frontend URL
         methods: ['GET', 'POST','PUT', 'DELETE', 'PATCH'],
 	},

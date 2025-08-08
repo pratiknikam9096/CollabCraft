@@ -6,7 +6,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef } from "react"
 import { toast } from "react-hot-toast"
 import { useLocation, useNavigate } from "react-router-dom"
 import { v4 as uuidv4 } from "uuid"
-import logo from "@/assets/logo.svg"
+// import logo from "@/assets/logo.svg"
 
 const FormComponent = () => {
     const location = useLocation()
@@ -89,14 +89,14 @@ const FormComponent = () => {
     }, [currentUser, location.state?.redirect, navigate, setStatus, socket, status])
 
     return (
-        <div className="flex w-full max-w-[500px] flex-col items-center justify-center gap-4 p-4 sm:w-[500px] sm:p-8">
-            <img src={logo} alt="Logo" className="w-full"/>
-            <form onSubmit={joinRoom} className="flex w-full flex-col gap-4">
+        <div className="w-full">
+            
+            <form onSubmit={joinRoom} className="flex w-full flex-col gap-6">
                 <input
                     type="text"
                     name="roomId"
                     placeholder="Room Id"
-                    className="w-full rounded-md border border-gray-500 bg-darkHover px-3 py-3 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-600 bg-darkHover/80 px-4 py-4 text-white placeholder-gray-400 backdrop-blur-sm transition-all duration-200 focus:border-primary focus:bg-darkHover focus:outline-none focus:ring-2 focus:ring-primary/20"
                     onChange={handleInputChanges}
                     value={currentUser.roomId}
                 />
@@ -104,20 +104,21 @@ const FormComponent = () => {
                     type="text"
                     name="username"
                     placeholder="Username"
-                    className="w-full rounded-md border border-gray-500 bg-darkHover px-3 py-3 focus:outline-none"
+                    className="w-full rounded-lg border border-gray-600 bg-darkHover/80 px-4 py-4 text-white placeholder-gray-400 backdrop-blur-sm transition-all duration-200 focus:border-primary focus:bg-darkHover focus:outline-none focus:ring-2 focus:ring-primary/20"
                     onChange={handleInputChanges}
                     value={currentUser.username}
                     ref={usernameRef}
                 />
                 <button
                     type="submit"
-                    className="mt-2 w-full rounded-md bg-primary px-8 py-3 text-lg font-semibold text-black"
+                    className="mt-4 w-full rounded-lg bg-gradient-to-r from-primary to-green-400 px-8 py-4 text-lg font-bold text-black transition-all duration-200 hover:from-green-400 hover:to-primary hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={status === USER_STATUS.ATTEMPTING_JOIN}
                 >
-                    Join
+                    {status === USER_STATUS.ATTEMPTING_JOIN ? "Joining..." : "Join Room"}
                 </button>
             </form>
             <button
-                className="cursor-pointer select-none underline"
+                className="mt-6 w-full cursor-pointer select-none text-center text-sm text-gray-400 underline transition-colors hover:text-primary"
                 onClick={createNewRoomId}
             >
                 Generate Unique Room Id
