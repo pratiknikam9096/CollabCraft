@@ -23,13 +23,17 @@ app.use(cors({
 
 
 app.use(express.static(path.join(__dirname, "public"))) // Serve static files
+app.use((req: Request, res: Response) => {
+    res.status(404).sendFile(path.join(__dirname, "..", "public", "404.html"))
+});
 
 const server = http.createServer(app)
 
 const io = new Server(server, {
 	cors: {
 		 origin: [
-      'https://collabcraft-cbqu.onrender.com'
+			'localhost:5173',
+		'https://collabcraft-cbqu.onrender.com'
     ], // Replace with your deployed frontend URL
         methods: ['GET', 'POST','PUT', 'DELETE', 'PATCH'],
 	},

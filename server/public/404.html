@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>404 — Lost in Space</title>
+  <style>
+    :root{
+      --bg:#070719; --glass: rgba(255,255,255,0.06);
+      --accent:#6EE7B7; --danger:#FF6B6B; --muted:#9CA3AF;
+    }
+    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    html,body{height:100%;margin:0}
+    body{
+      background: radial-gradient(ellipse at bottom, #0b1226 0%, var(--bg) 60%);
+      color:#e6eef8; overflow:hidden; display:flex; align-items:center; justify-content:center;
+    }
+    .stage{width:min(980px,94vw);height:min(640px,86vh);background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:20px;padding:28px;box-shadow:0 10px 40px rgba(2,6,23,0.6);backdrop-filter: blur(6px);position:relative}
+    header{display:flex;gap:18px;align-items:center}
+    .logo{width:84px;height:84px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#06202a;box-shadow:0 6px 18px rgba(95,178,156,0.14)}
+    h1{margin:0;font-size:28px}
+    p.lead{margin:6px 0 0;color:var(--muted)}
+
+    /* Game area */
+    .game-wrap{display:flex;gap:28px;margin-top:18px}
+    .left{flex:1;display:flex;flex-direction:column;gap:10px}
+    .scene{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));border-radius:12px;padding:12px;height:420px;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.03)}
+
+    /* Stars */
+    .star{position:absolute;width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.9);box-shadow:0 0 8px rgba(255,255,255,0.5)}
+
+    /* HUD */
+    .hud{display:flex;gap:8px;align-items:center}
+    .badge{background:var(--glass);padding:8px 12px;border-radius:999px;font-size:13px;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
+
+    /* Right panel */
+    .right{width:300px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+    .btn{display:inline-block;margin-top:10px;background:linear-gradient(90deg,var(--accent),#60a5fa);color:#04202a;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:600}
+
+    /* Rocket */
+    .rocket{width:36px;height:56px;position:absolute;left:50%;transform:translateX(-50%);bottom:18px;transition:left 50ms linear}
+    .rocket .body{width:36px;height:48px;border-radius:6px;background:linear-gradient(180deg,#fff,#e6f7ff);display:flex;align-items:center;justify-content:center;position:relative}
+    .rocket .fin{position:absolute;width:12px;height:12px;background:#ff9f1c;bottom:8px;border-radius:2px}
+    .rocket .fin.left{left:-8px;transform:rotate(-24deg)}
+    .rocket .fin.right{right:-8px;transform:rotate(24deg)}
+    .flame{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:10px;height:18px;border-radius:8px;background:linear-gradient(180deg,#ffd27a,#ff6b6b);filter:blur(2px);opacity:0.95}
+
+    /* Asteroid */
+    .asteroid{position:absolute;border-radius:50%;background:linear-gradient(135deg,#8b5e3c,#503a2b);box-shadow:inset -6px -6px 12px rgba(0,0,0,0.4)}
+
+    /* Particle + explosion */
+    .explosion{position:absolute;width:120px;height:120px;border-radius:50%;pointer-events:none}
+
+    /* Footer */
+    .footer{position:absolute;left:28px;bottom:18px;color:var(--muted);font-size:13px}
+
+    /* Responsive */
+    @media (max-width:880px){.game-wrap{flex-direction:column}.right{width:100%}}
+  </style>
+</head>
+<body>
+  <div class="stage" role="main">
+    <header>
+      <div class="logo">404</div>
+      <div>
+        <h1>Oops — Page not found</h1>
+        <p class="lead">Looks like this short link drifted into uncharted space. Try guiding your rocket home.</p>
+        <div class="hud" style="margin-top:8px">
+          <div class="badge">Use ← → or A D to move</div>
+          <div class="badge">Survive 20s to get a souvenir</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="game-wrap">
+      <div class="left">
+        <div class="scene" id="scene" aria-label="Game scene where you dodge asteroids">
+          <!-- dynamic stars, rocket, asteroids -->
+          <div id="stars"></div>
+          <div class="rocket" id="rocket" style="left:50%">
+            <div class="body"></div>
+            <div class="fin left"></div>
+            <div class="fin right"></div>
+            <div class="flame"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="card" style="flex:1">
+            <strong>Score</strong>
+            <div id="score" style="font-size:22px;margin-top:6px;">0</div>
+            <div style="color:var(--muted);font-size:13px;margin-top:6px">Avoid asteroids. The longer you survive, the higher your score.</div>
+          </div>
+          <div class="card" style="width:140px;text-align:center">
+            <strong>Status</strong>
+            <div id="status" style="font-size:20px;margin-top:6px;color:var(--accent)">Ready</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px">Press Space to start</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="right">
+        <div class="card">
+          <h3>Short link not found</h3>
+          <p style="color:var(--muted)">Either the link expired or it never existed. Play the mini-game while we get you back.</p>
+          <a class="btn" id="homeBtn" href="/">Go Home</a>
+          <button class="btn" id="startBtn" style="display:inline-block;margin-left:8px;">Start</button>
+        </div>
+
+        <div style="height:18px"></div>
+
+        <div class="card">
+          <strong>Tips</strong>
+          <ul style="margin:8px 0 0 16px;color:var(--muted)">
+            <li>Move smoothly; anticipate gaps.</li>
+            <li>One-hit collision ends the run — focus on survival.</li>
+            <li>Get a high score to unlock a playful confetti.</li>
+          </ul>
+        </div>
+
+      </aside>
+    </div>
+
+    <div class="footer">If you believe this is a mistake — <a href="/support" style="color:var(--accent)">contact support</a></div>
+  </div>
+
+  <script>
+    // Simple Space Dodger Game - single file implementation
+    const scene = document.getElementById('scene');
+    const rocket = document.getElementById('rocket');
+    const starsWrap = document.getElementById('stars');
+    const scoreEl = document.getElementById('score');
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+    const homeBtn = document.getElementById('homeBtn');
+
+    let sceneW, sceneH;
+    let rocketX = 50; // percent
+    let moving = {left:false,right:false};
+    let asteroids = [];
+    let running = false;
+    let score = 0;
+    let startTime = 0;
+    let spawnTimer=0;
+
+    // Resize
+    function resize(){
+      const rect = scene.getBoundingClientRect();
+      sceneW = rect.width; sceneH = rect.height;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Stars
+    function makeStars(n=30){
+      starsWrap.innerHTML='';
+      for(let i=0;i<n;i++){
+        const s = document.createElement('div');
+        s.className='star';
+        s.style.left = Math.random()*100 + '%';
+        s.style.top = Math.random()*100 + '%';
+        s.style.opacity = 0.2 + Math.random()*0.8;
+        s.style.transform = 'scale('+(0.4+Math.random()*1.2)+')';
+        starsWrap.appendChild(s);
+      }
+    }
+    makeStars(40);
+
+    // Controls
+    document.addEventListener('keydown', e=>{
+      if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moving.left=true;
+      if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moving.right=true;
+      if(e.key === ' ' && !running) startGame();
+    });
+    document.addEventListener('keyup', e=>{
+      if(e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') moving.left=false;
+      if(e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') moving.right=false;
+    });
+
+    // Start / Stop
+    startBtn.addEventListener('click', ()=>{ if(!running) startGame(); else endGame(); });
+
+    function startGame(){
+      running = true; asteroids=[]; score=0; startTime = performance.now(); spawnTimer=0; statusEl.textContent='Alive'; statusEl.style.color='var(--accent)'; startBtn.textContent='End';
+      rocket.style.left = '50%'; rocketX=50;
+      requestAnimationFrame(loop);
+    }
+    function endGame(){
+      running=false; statusEl.textContent='Ended'; startBtn.textContent='Start';
+      showExplosion(rocket);
+    }
+
+    // Spawn asteroid
+    function spawnAsteroid(){
+      const a = document.createElement('div');
+      a.className='asteroid';
+      const size = 22 + Math.random()*48;
+      a.style.width = size+'px'; a.style.height = size+'px';
+      const left = Math.random()*(sceneW - size);
+      a.style.left = left+'px'; a.style.top = '-'+size+'px';
+      const speed = 40 + Math.random()*120; // px/sec
+      scene.appendChild(a);
+      asteroids.push({el:a,x:left,y:-size,size,speed});
+    }
+
+    function showExplosion(targetEl){
+      const rect = targetEl.getBoundingClientRect();
+      const sceneRect = scene.getBoundingClientRect();
+      const ex = document.createElement('div');
+      ex.className='explosion';
+      ex.style.left = (rect.left - sceneRect.left + rect.width/2 - 60) + 'px';
+      ex.style.top = (rect.top - sceneRect.top + rect.height/2 - 60) + 'px';
+      ex.style.background = 'radial-gradient(circle, rgba(255,220,120,0.9) 0%, rgba(255,120,80,0.6) 35%, rgba(255,40,20,0.0) 70%)';
+      ex.style.opacity=1; ex.style.transform='scale(0.2)';
+      scene.appendChild(ex);
+      let start = performance.now();
+      function animate(t){
+        const p = (t-start)/400;
+        ex.style.transform = 'scale('+ (0.2 + p*2.6) +')';
+        ex.style.opacity = String(Math.max(0,1 - p));
+        if(p<1) requestAnimationFrame(animate); else ex.remove();
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function collideRect(aRect, bRect){
+      return !(aRect.right < bRect.left || aRect.left > bRect.right || aRect.bottom < bRect.top || aRect.top > bRect.bottom);
+    }
+
+    // Game loop
+    let last = performance.now();
+    function loop(t){
+      if(!running) return;
+      const dt = (t-last)/1000; last=t;
+
+      // Move rocket
+      const moveSpeed = 60; // percent per second
+      if(moving.left) rocketX -= moveSpeed*dt; if(moving.right) rocketX += moveSpeed*dt;
+      rocketX = Math.max(6, Math.min(94, rocketX));
+      rocket.style.left = rocketX+'%';
+
+      // spawn
+      spawnTimer += dt*1000;
+      if(spawnTimer > 600 - Math.min(450, (t-startTime)/15)){
+        spawnAsteroid(); spawnTimer=0;
+      }
+
+      // update asteroids
+      for(let i=asteroids.length-1;i>=0;i--){
+        const a = asteroids[i];
+        a.y += a.speed * dt;
+        if(a.y > sceneH + 60){ a.el.remove(); asteroids.splice(i,1); score += 1; continue; }
+        a.el.style.top = a.y + 'px';
+
+        // collision
+        const aRect = a.el.getBoundingClientRect();
+        const rRect = rocket.getBoundingClientRect();
+        if(collideRect(aRect, rRect)){
+          // game over
+          running=false; statusEl.textContent='Crashed'; statusEl.style.color='var(--danger)'; startBtn.textContent='Start';
+          showExplosion(rocket);
+          // celebrate if good score
+          if(score >= 20) celebrate();
+          break;
+        }
+      }
+
+      // score update
+      scoreEl.textContent = score;
+
+      if(running) requestAnimationFrame(loop);
+    }
+
+    function celebrate(){
+      // simple confetti using stars
+      for(let i=0;i<30;i++){
+        const c = document.createElement('div');
+        c.className='star';
+        c.style.width='8px'; c.style.height='8px'; c.style.borderRadius='2px';
+        c.style.left = (30 + Math.random()*40) + '%';
+        c.style.top = (30 + Math.random()*20) + '%';
+        c.style.transform = 'rotate('+ (Math.random()*360) +'deg)';
+        c.style.opacity = 1; c.style.background = 'linear-gradient(135deg,#fff,#ffd27a)';
+        scene.appendChild(c);
+        (function(el){
+          let st = performance.now();
+          function anim(t){
+            const p = (t-st)/900;
+            el.style.transform = 'translateY(' + (p*200) + 'px) rotate('+ (p*720) +'deg)';
+            el.style.opacity = String(Math.max(0,1 - p));
+            if(p<1) requestAnimationFrame(anim); else el.remove();
+          }
+          requestAnimationFrame(anim);
+        })(c);
+      }
+    }
+
+    // initial asteroids for effect
+    for(let i=0;i<4;i++) spawnAsteroid();
+
+    // Helpful: if the user clicks rocket -> start
+    rocket.addEventListener('click', ()=>{ if(!running) startGame(); });
+
+    // initial
+    statusEl.textContent='Ready';
+    startBtn.textContent='Start';
+    resize();
+  </script>
+</body>
+</html>
