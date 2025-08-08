@@ -22,7 +22,7 @@ app.use(cors({
 }));
 
 
-app.use(express.static(path.join(__dirname, "public"))) // Serve static files
+app.use(express.static(path.join(__dirname, "public"),{ fallthrough: true })) // Serve static files
 
 
 const server = http.createServer(app)
