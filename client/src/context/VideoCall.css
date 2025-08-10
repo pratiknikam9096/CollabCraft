@@ -1,95 +1,43 @@
-/* Video call button style */
-.video-call-btn {
-  background: #0070f3;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 16px;
-  font-size: 1rem;
-  cursor: pointer;
-  margin: 4px 0;
-  transition: background 0.2s;
-}
-.video-call-btn:hover {
-  background: #005bb5;
-}
-
-/* Video call area */
-.video-call-area {
+/* Small floating video call window */
+.video-call-floating {
   position: fixed;
-  bottom: 0;
-  right: 0;
-  left: 0;
-  top: 0;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  pointer-events: none;
-}
-
-/* Video window */
-.video-call-window {
-  position: relative;
+  bottom: 16px;
+  right: 16px;
+  width: 220px;
+  height: 140px;
   background: #222;
   border-radius: 12px;
-  overflow: hidden;
   box-shadow: 0 2px 16px rgba(0,0,0,0.2);
-  width: 320px;
-  max-width: 90vw;
-  height: 220px;
-  max-height: 40vh;
-  margin: 8px;
-  pointer-events: auto;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.video-call-window video {
+.video-call-floating video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 12px;
   background: #000;
-  border-radius: 12px;
 }
 
-/* Controls bar */
-.video-call-controls {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(34,34,34,0.95);
-  padding: 8px 16px;
-  border-radius: 12px;
-  color: #fff;
-  display: flex;
-  gap: 10px;
-  z-index: 20;
-}
-
-.video-call-controls button {
-  background: #0070f3;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.video-call-controls button:hover {
-  background: #005bb5;
+/* When presenting, make camera video even smaller */
+.video-call-presenting {
+  width: 120px;
+  height: 80px;
+  bottom: 24px;
+  right: 24px;
 }
 
 /* Responsive for mobile */
 @media (max-width: 600px) {
-  .video-call-window {
-    width: 95vw;
-    height: 180px;
-    max-height: 30vh;
+  .video-call-floating {
+    width: 120px;
+    height: 80px;
+    bottom: 8px;
+    right: 8px;
   }
-  .video-call-controls {
-    padding: 6px 8px;
-    font-size: 0.9rem;
-   }
 }

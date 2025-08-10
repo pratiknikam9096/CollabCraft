@@ -4,7 +4,7 @@ import React, {
 } from "react";
 import { Rnd } from "react-rnd";
 import toast from "react-hot-toast";
-import "./VideoCall.css"
+import "./VideoCall.css";
 
 type VideoParticipant = {
   socketId: string;
@@ -277,7 +277,7 @@ const VideoCallContextProvider = ({ children }: Props) => {
 export default VideoCallContextProvider;
 
 // ------------------
-// Resizable Video UI component (You can export this and use wherever needed)
+// Floating/Resizable Video UI component
 
 export const VideoCallFrame = () => {
   const {
@@ -301,17 +301,17 @@ export const VideoCallFrame = () => {
   };
 
   if (!isVideoCallActive) {
-  return (
-    <div style={{ textAlign: "center", marginTop: 50 }}>
-      <button onClick={() => startVideoCall()} style={{ marginRight: 10 }}>
-        Start Video Call
-      </button>
-      <button onClick={() => joinVideoCall()}>
-        Join Video Call
-      </button>
-    </div>
-  );
-}
+    return (
+      <div style={{ textAlign: "center", marginTop: 50 }}>
+        <button onClick={() => startVideoCall()} style={{ marginRight: 10 }}>
+          Start Video Call
+        </button>
+        <button onClick={() => joinVideoCall()}>
+          Join Video Call
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -320,7 +320,7 @@ export const VideoCallFrame = () => {
     }}>
       {/* Local Video */}
       {localStream && (
-        <Rnd default={{ x: 40, y: 30, width: 320, height: 220 }} bounds="parent">
+        <Rnd default={{ x: 40, y: 30, width: isScreenSharing ? 120 : 320, height: isScreenSharing ? 80 : 220 }} bounds="parent">
           <video
             ref={ref => makeVideoSrc(ref, localStream)}
             autoPlay muted
