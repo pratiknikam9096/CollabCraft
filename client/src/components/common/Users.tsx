@@ -1,9 +1,11 @@
 import { useAppContext } from "@/context/AppContext"
 import { RemoteUser, USER_CONNECTION_STATUS } from "@/types/user"
 import Avatar from "react-avatar"
+import { useVideoCall } from "../../context/VideoCallContext";
 
 function Users() {
     const { users } = useAppContext()
+    const { startVideoCall, joinVideoCall, isVideoCallActive } = useVideoCall();
 
     return (
         <div className="flex min-h-[200px] flex-grow justify-center overflow-y-auto py-2">
@@ -12,6 +14,20 @@ function Users() {
                     return <User key={user.socketId} user={user} />
                 })}
             </div>
+            <div style={{ marginTop: 16 }}>
+        {!isVideoCallActive ? (
+          <>
+            <button className="video-call-btn" onClick={startVideoCall}>
+              Start Video Call
+            </button>
+            <button className="video-call-btn" onClick={joinVideoCall} style={{ marginLeft: 8 }}>
+              Join Video Call
+            </button>
+          </>
+        ) : (
+          <span>Video call in progress</span>
+        )}
+      </div>
         </div>
     )
 }
