@@ -1,5 +1,3 @@
-// src/components/VideoCallFrame.tsx
-
 import React, {
   createContext, useContext, useCallback,
   useRef, useState, useEffect, ReactNode
@@ -7,7 +5,6 @@ import React, {
 import { Rnd } from "react-rnd";
 import toast from "react-hot-toast";
 
-// Mock types -- replace these with your actual types!
 type VideoParticipant = {
   socketId: string;
   username: string;
@@ -35,13 +32,14 @@ type VideoCallContextType = {
   joinVideoCall: () => void;
   leaveVideoCall: () => void;
 };
-// Mock socket/context hooks -- replace with your actual logic!
+
+// MOCK CONTEXTS — Replace these with your actual implementations
 const SocketContext = React.createContext<{ socket: any }>({ socket: { emit: () => {}, on: () => {}, off: () => {}, id: "self" } });
 const useSocket = () => useContext(SocketContext);
+
 const AppContext = React.createContext<{ currentUser: { username: string } }>({ currentUser: { username: "Me" } });
 const useAppContext = () => useContext(AppContext);
 
-// --- CONTEXT PROVIDER ---
 const VideoCallContext = createContext<VideoCallContextType | null>(null);
 
 export const useVideoCall = (): VideoCallContextType => {
@@ -50,7 +48,9 @@ export const useVideoCall = (): VideoCallContextType => {
   return context;
 };
 
-const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
+type Props = { children: ReactNode };
+
+const VideoCallContextProvider = ({ children }: Props) => {
   const { socket } = useSocket();
   const { currentUser } = useAppContext();
 
@@ -64,8 +64,12 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localVideoRef = useRef<HTMLVideoElement>(null);
 
-  // WebRTC config
-  const rtcConfig = { iceServers: [ { urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' } ] };
+  const rtcConfig = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" }
+    ]
+  };
 
   const createPeerConnection = useCallback((socketId: string) => {
     const peerConnection = new RTCPeerConnection(rtcConfig);
@@ -78,8 +82,8 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
     };
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        socket.emit('video-call-signal', {
-          type: 'ice-candidate', socketId, data: event.candidate
+        socket.emit("video-call-signal", {
+          type: "ice-candidate", socketId, data: event.candidate
         });
       }
     };
@@ -93,24 +97,27 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
       setLocalStream(stream);
       setIsVideoCallActive(true);
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-      socket.emit('video-call-signal', {
-        type: 'video-call-start', socketId: socket.id, data: { username: currentUser.username }
+      socket.emit("video-call-signal", {
+        type: "video-call-start", socketId: socket.id, data: { username: currentUser.username }
       });
       toast.success("Video call started!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to start video call.");
     }
   }, [socket, currentUser.username]);
 
   const endVideoCall = useCallback(() => {
-    if (localStream) { localStream.getTracks().forEach(track => track.stop()); setLocalStream(null); }
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+    }
     peerConnections.current.forEach(pc => pc.close());
     peerConnections.current.clear();
     setRemoteStreams(new Map());
     setIsVideoCallActive(false);
     setIsScreenSharing(false);
     setParticipants([]);
-    socket.emit('video-call-signal', { type: 'video-call-end', socketId: socket.id, data: {} });
+    socket.emit("video-call-signal", { type: "video-call-end", socketId: socket.id, data: {} });
     toast.success("Video call ended");
   }, [localStream, socket]);
 
@@ -120,8 +127,8 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsVideoEnabled(videoTrack.enabled);
-        socket.emit('video-call-signal', {
-          type: 'user-media-state', socketId: socket.id,
+        socket.emit("video-call-signal", {
+          type: "user-media-state", socketId: socket.id,
           data: { isVideoEnabled: videoTrack.enabled, isAudioEnabled }
         });
       }
@@ -134,8 +141,8 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsAudioEnabled(audioTrack.enabled);
-        socket.emit('video-call-signal', {
-          type: 'user-media-state', socketId: socket.id,
+        socket.emit("video-call-signal", {
+          type: "user-media-state", socketId: socket.id,
           data: { isVideoEnabled, isAudioEnabled: audioTrack.enabled }
         });
       }
@@ -148,7 +155,7 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
         const videoTrack = screenStream.getVideoTracks()[0];
         peerConnections.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+          const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
           if (sender) sender.replaceTrack(videoTrack);
         });
         if (localStream) {
@@ -162,7 +169,7 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
           const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
           const newVideoTrack = cameraStream.getVideoTracks()[0];
           peerConnections.current.forEach(pc => {
-            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === "video");
             if (sender) sender.replaceTrack(newVideoTrack);
           });
           if (localStream) {
@@ -173,7 +180,7 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
           toast.success("Screen sharing stopped");
         };
       }
-    } catch (error) {
+    } catch {
       toast.error("Failed to share screen");
     }
   }, [isScreenSharing, localStream]);
@@ -185,7 +192,7 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
       setIsVideoCallActive(true);
       if (localVideoRef.current) localVideoRef.current.srcObject = stream;
       toast.success("Joined video call!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to join video call");
     }
   }, []);
@@ -197,10 +204,10 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const handleVideoCallSignal = async ({ type, socketId, data }: RTCMessage) => {
       switch (type) {
-        case 'video-call-start':
+        case "video-call-start":
           toast.success(`${data.username} started a video call`);
           break;
-        case 'video-call-end':
+        case "video-call-end": {
           const pc = peerConnections.current.get(socketId);
           if (pc) {
             pc.close();
@@ -212,25 +219,26 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
             return newMap;
           });
           break;
-        case 'offer': {
+        }
+        case "offer": {
           const peerConnection = createPeerConnection(socketId);
           await peerConnection.setRemoteDescription(data);
           const answer = await peerConnection.createAnswer();
           await peerConnection.setLocalDescription(answer);
-          socket.emit('video-call-signal', { type: 'answer', socketId, data: answer });
+          socket.emit("video-call-signal", { type: "answer", socketId, data: answer });
           break;
         }
-        case 'answer': {
+        case "answer": {
           const pc2 = peerConnections.current.get(socketId);
           if (pc2) await pc2.setRemoteDescription(data);
           break;
         }
-        case 'ice-candidate': {
+        case "ice-candidate": {
           const pc3 = peerConnections.current.get(socketId);
           if (pc3) await pc3.addIceCandidate(data);
           break;
         }
-        case 'user-media-state':
+        case "user-media-state":
           setParticipants(prev => prev.map(p =>
             p.socketId === socketId ?
               { ...p, isVideoEnabled: data.isVideoEnabled, isAudioEnabled: data.isAudioEnabled } : p
@@ -238,9 +246,10 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
           break;
       }
     };
-    socket.on('video-call-signal', handleVideoCallSignal);
+
+    socket.on("video-call-signal", handleVideoCallSignal);
     return () => {
-      socket.off('video-call-signal', handleVideoCallSignal);
+      socket.off("video-call-signal", handleVideoCallSignal);
     };
   }, [socket, createPeerConnection]);
 
@@ -259,13 +268,17 @@ const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
       toggleAudio, toggleScreenShare, joinVideoCall, leaveVideoCall
     }}>
       {children}
-      <video ref={localVideoRef} autoPlay muted playsInline style={{ display: 'none' }} />
+      <video ref={localVideoRef} autoPlay muted playsInline style={{ display: "none" }} />
     </VideoCallContext.Provider>
   );
 };
 
-// --- RESIZABLE VIDEO UI ---
-const VideoCallFrame = () => {
+export default VideoCallContextProvider;
+
+// ------------------
+// Resizable Video UI component (You can export this and use wherever needed)
+
+export const VideoCallFrame = () => {
   const {
     localStream,
     remoteStreams,
@@ -298,19 +311,18 @@ const VideoCallFrame = () => {
   return (
     <div style={{
       display: "flex", flexWrap: "wrap", gap: 12, minHeight: 400,
-      alignItems: "center", justifyContent: "center", padding: 20
+      alignItems: "center", justifyContent: "center", padding: 20, position: "relative"
     }}>
       {/* Local Video */}
       {localStream && (
         <Rnd default={{ x: 40, y: 30, width: 320, height: 220 }} bounds="parent">
           <video
             ref={ref => makeVideoSrc(ref, localStream)}
-            autoPlay
-            muted
+            autoPlay muted
             playsInline
             style={{ width: "100%", height: "100%", borderRadius: 12, background: "black" }}
           />
-          <div style={{ position: "absolute", top: 8, left: 8 }}>
+          <div style={{ position: "absolute", top: 8, left: 8, zIndex: 10 }}>
             <button onClick={toggleVideo} style={{ marginRight: 6 }}>
               {isVideoEnabled ? "Disable Video" : "Enable Video"}
             </button>
@@ -324,7 +336,7 @@ const VideoCallFrame = () => {
         </Rnd>
       )}
 
-      {/* Remote Video Streams */}
+      {/* Remote Videos */}
       {[...remoteStreams.entries()].map(([socketId, stream]) => (
         <Rnd key={socketId} default={{ x: 50, y: 40, width: 320, height: 220 }} bounds="parent">
           <video
@@ -336,6 +348,7 @@ const VideoCallFrame = () => {
         </Rnd>
       ))}
 
+      {/* Bottom Controls */}
       <div style={{
         position: "absolute",
         bottom: 18,
@@ -344,7 +357,8 @@ const VideoCallFrame = () => {
         background: "#222",
         padding: 8,
         borderRadius: 12,
-        color: "white"
+        color: "white",
+        zIndex: 20,
       }}>
         <button onClick={endVideoCall} style={{ marginRight: 10 }}>End Call</button>
         <button onClick={leaveVideoCall}>Leave Call</button>
@@ -352,16 +366,3 @@ const VideoCallFrame = () => {
     </div>
   );
 };
-
-// --- USAGE ---
-const App = () => (
-  <SocketContext.Provider value={{ socket: {/* ...your socket instance... */ id: 'self', emit: ()=>{}, on:()=>{}, off:()=>{} } }}>
-    <AppContext.Provider value={{ currentUser: { username: "Me" } }}>
-      <VideoCallContextProvider>
-        <VideoCallFrame />
-      </VideoCallContextProvider>
-    </AppContext.Provider>
-  </SocketContext.Provider>
-);
-
-export default App;
