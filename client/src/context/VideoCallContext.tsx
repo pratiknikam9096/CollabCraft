@@ -17,7 +17,7 @@ export const useVideoCall = (): VideoCallContextType => {
 
 const VideoCallContextProvider = ({ children }: { children: ReactNode }) => {
     const { socket } = useSocket()
-    const { currentUser, users } = useAppContext()
+    const { currentUser } = useAppContext()
     
     const [localStream, setLocalStream] = useState<MediaStream | null>(null)
     const [remoteStreams, setRemoteStreams] = useState<Map<string, MediaStream>>(new Map())
