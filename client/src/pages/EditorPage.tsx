@@ -51,13 +51,16 @@ function EditorPage() {
     }
 
     return (
+        <div>
         <SplitterComponent>
             <Sidebar />
             <WorkSpace/>
             <GitHubCorner />
             <VideoCallButton />
-             <VideoCallFrame />
+             
         </SplitterComponent>
+        <VideoCallFrame />
+        </div>
     )
 }
 
