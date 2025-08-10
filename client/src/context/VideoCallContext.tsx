@@ -25,7 +25,7 @@ type VideoCallContextType = {
   isAudioEnabled: boolean;
   isScreenSharing: boolean;
   participants: VideoParticipant[];
-  startVideoCall: () => void;
+  startVideoCall: (targetSocketId?: string) => void;
   endVideoCall: () => void;
   toggleVideo: () => void;
   toggleAudio: () => void;
@@ -301,13 +301,17 @@ export const VideoCallFrame = () => {
   };
 
   if (!isVideoCallActive) {
-    return (
-      <div style={{ textAlign: "center", marginTop: 50 }}>
-        <button onClick={startVideoCall} style={{ marginRight: 10 }}>Start Video Call</button>
-        <button onClick={joinVideoCall}>Join Video Call</button>
-      </div>
-    );
-  }
+  return (
+    <div style={{ textAlign: "center", marginTop: 50 }}>
+      <button onClick={() => startVideoCall()} style={{ marginRight: 10 }}>
+        Start Video Call
+      </button>
+      <button onClick={() => joinVideoCall()}>
+        Join Video Call
+      </button>
+    </div>
+  );
+}
 
   return (
     <div style={{

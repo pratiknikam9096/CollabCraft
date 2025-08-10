@@ -1,39 +1,51 @@
 import { useAppContext } from "@/context/AppContext"
 import { RemoteUser, USER_CONNECTION_STATUS } from "@/types/user"
 import Avatar from "react-avatar"
-import { useVideoCall } from "../../context/VideoCallContext";
+import { useVideoCall } from "../../context/VideoCallContext"
+import "./../../context/VideoCall.css"
 
 function Users() {
     const { users } = useAppContext()
-    const { startVideoCall, joinVideoCall, isVideoCallActive } = useVideoCall();
+    const { startVideoCall, joinVideoCall, isVideoCallActive } = useVideoCall()
 
     return (
         <div className="flex min-h-[200px] flex-grow justify-center overflow-y-auto py-2">
             <div className="flex h-full w-full flex-wrap items-start gap-x-2 gap-y-6">
-                {users.map((user) => {
-                    return <User key={user.socketId} user={user} />
-                })}
+                {users.map((user) => (
+                    <User
+                        key={user.socketId}
+                        user={user}
+                        startVideoCall={startVideoCall}
+                        isVideoCallActive={isVideoCallActive}
+                    />
+                ))}
             </div>
             <div style={{ marginTop: 16 }}>
-        {!isVideoCallActive ? (
-          <>
-            <button className="video-call-btn" onClick={startVideoCall}>
-              Start Video Call
-            </button>
-            <button className="video-call-btn" onClick={joinVideoCall} style={{ marginLeft: 8 }}>
-              Join Video Call
-            </button>
-          </>
-        ) : (
-          <span>Video call in progress</span>
-        )}
-      </div>
+                {!isVideoCallActive ? (
+                    <>
+                        <button className="video-call-btn" onClick={() => startVideoCall()}>
+                            Start Group Video Call
+                        </button>
+                        <button className="video-call-btn" onClick={joinVideoCall} style={{ marginLeft: 8 }}>
+                            Join Video Call
+                        </button>
+                    </>
+                ) : (
+                    <span>Video call in progress</span>
+                )}
+            </div>
         </div>
     )
 }
 
-const User = ({ user }: { user: RemoteUser }) => {
-    const { username, status } = user
+type UserProps = {
+    user: RemoteUser
+    startVideoCall: (targetSocketId?: string) => void
+    isVideoCallActive: boolean
+}
+
+const User = ({ user, startVideoCall, isVideoCallActive }: UserProps) => {
+    const { username, status, socketId } = user
     const title = `${username} - ${status === USER_CONNECTION_STATUS.ONLINE ? "online" : "offline"}`
 
     return (
@@ -52,6 +64,17 @@ const User = ({ user }: { user: RemoteUser }) => {
                         : "bg-danger"
                 }`}
             ></div>
+            {/* Video Call Button for each user */}
+            {status === USER_CONNECTION_STATUS.ONLINE && !isVideoCallActive && (
+                <button
+                    className="video-call-btn"
+                    style={{ marginTop: 8 }}
+                    onClick={() => startVideoCall(socketId)}
+                    title={`Start video call with ${username}`}
+                >
+                    📹 Video Call
+                </button>
+            )}
         </div>
     )
 }
