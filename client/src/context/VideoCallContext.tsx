@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react"
 import { VideoCallContext as VideoCallContextType, VideoParticipant, RTCMessage } from "@/types/video"
+import { SocketEvent } from "@/types/socket"
 import { useSocket } from "./SocketContext"
 import { useAppContext } from "./AppContext"
 import { SocketEvent } from "@/types/socket"
