@@ -274,6 +274,16 @@ io.on("connection", (socket) => {
 			snapshot,
 		})
 	})
+
+	// Handle video call signaling
+	socket.on('video-call-signal', (data) => {
+		const roomId = getRoomId(socket.id)
+		if (!roomId) return
+		socket.broadcast.to(roomId).emit('video-call-signal', {
+			...data,
+			socketId: socket.id
+		})
+	})
 })
 
 const PORT = process.env.PORT || 3001

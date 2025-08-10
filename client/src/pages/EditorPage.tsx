@@ -3,6 +3,7 @@ import ConnectionStatusPage from "@/components/connection/ConnectionStatusPage"
 import Sidebar from "@/components/sidebar/Sidebar"
 import GitHubCorner from "@/components/GitHubCorner"
 import WorkSpace from "@/components/workspace"
+import VideoCallButton from "@/components/video/VideoCallButton"
 import { useAppContext } from "@/context/AppContext"
 import { useSocket } from "@/context/SocketContext"
 import useFullScreen from "@/hooks/useFullScreen"
@@ -52,7 +53,8 @@ function EditorPage() {
         <SplitterComponent>
             <Sidebar />
             <WorkSpace/>
-             <GitHubCorner />
+            <GitHubCorner />
+            <VideoCallButton />
         </SplitterComponent>
     )
 }
