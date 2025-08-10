@@ -1,0 +1,49 @@
+/* Container for the video call window */
+.video-call-container {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: 100%;           /* use full available width */
+  max-width: 100vw;      /* prevent horizontal overflow */
+  padding: 0.5rem;
+  box-sizing: border-box;
+  background: #000;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* The video call window itself */
+.video-call-window {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+/* Optional: Button to open/close video call controls */
+.video-call-button {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: #0070f3;
+  color: #fff;
+  cursor: pointer;
+  z-index: 1100;
+}
+
+/* Optional media query for smaller screens */
+@media (max-width: 600px) {
+  .video-call-container {
+    padding: 0.25rem;
+  }
+  .video-call-button {
+    bottom: 0.5rem;
+    right: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+}

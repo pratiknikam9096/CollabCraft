@@ -4,6 +4,7 @@ import React, {
 } from "react";
 import { Rnd } from "react-rnd";
 import toast from "react-hot-toast";
+import "./VideoCall.css"
 
 type VideoParticipant = {
   socketId: string;
