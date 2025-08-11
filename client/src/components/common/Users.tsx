@@ -1,19 +1,45 @@
-import { useAppContext } from "@/context/AppContext"
-import { RemoteUser, USER_CONNECTION_STATUS } from "@/types/user"
-import Avatar from "react-avatar"
-import { useVideoCall } from "../../context/VideoCallContext"
-import "./../../context/VideoCall.css"
-import { VideoCallFrame } from "../../context/VideoCallContext"
+import { useAppContext } from "@/context/AppContext";
+import { RemoteUser, USER_CONNECTION_STATUS } from "@/types/user";
+import Avatar from "react-avatar";
+import { useVideoCall } from "../../context/VideoCallContext";
+import "./../../context/VideoCall.css";
+import { VideoCallFrame } from "../../context/VideoCallContext";
 
 function Users() {
-    const { users } = useAppContext()
-    const { startVideoCall, joinVideoCall, isVideoCallActive } = useVideoCall()
+    const { users } = useAppContext();
+    const { startVideoCall, joinVideoCall, isVideoCallActive } = useVideoCall();
 
     return (
-        <div className="flex min-h-[200px] flex-grow justify-center overflow-y-auto py-2">
-            <div className="flex h-full w-full flex-wrap items-start gap-x-2 gap-y-6">
+        <div className="flex flex-col gap-4 p-4 w-full">
+            
+            {/* Group Call Controls */}
+            <div className="flex justify-center gap-4">
+                {!isVideoCallActive ? (
+                    <>
+                        <button
+                            className="video-call-btn"
+                            onClick={() => startVideoCall()}
+                        >
+                            📞 Start Group Video Call
+                        </button>
+                        <button
+                            className="video-call-btn"
+                            onClick={joinVideoCall}
+                        >
+                            ➕ Join Video Call
+                        </button>
+                    </>
+                ) : (
+                    <span className="text-green-600 font-semibold">
+                        📡 Video call in progress...
+                    </span>
+                )}
+            </div>
+
+            {/* User Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
                 {users.map((user) => (
-                    <User
+                    <UserCard
                         key={user.socketId}
                         user={user}
                         startVideoCall={startVideoCall}
@@ -21,65 +47,58 @@ function Users() {
                     />
                 ))}
             </div>
-            <div style={{ marginTop: 16 }}>
-                {!isVideoCallActive ? (
-                    <>
-                        <button className="video-call-btn" onClick={() => startVideoCall()}>
-                            Start Group Video Call
-                        </button>
-                        <button className="video-call-btn" onClick={joinVideoCall} style={{ marginLeft: 8 }}>
-                            Join Video Call
-                        </button>
-                    </>
-                ) : (
-                    <span>Video call in progress</span>
-                )}
-            </div>
-            
+
+            {/* Show Frame if Active Call */}
+            {isVideoCallActive && (
+                <div className="mt-6">
+                    <VideoCallFrame />
+                </div>
+            )}
         </div>
-    )
+    );
 }
 
 type UserProps = {
-    user: RemoteUser
-    startVideoCall: (targetSocketId?: string) => void
-    isVideoCallActive: boolean
-}
+    user: RemoteUser;
+    startVideoCall: (targetSocketId?: string) => void;
+    isVideoCallActive: boolean;
+};
 
-const User = ({ user, startVideoCall, isVideoCallActive }: UserProps) => {
-    const { username, status, socketId } = user
-    const title = `${username} - ${status === USER_CONNECTION_STATUS.ONLINE ? "online" : "offline"}`
+const UserCard = ({ user, startVideoCall, isVideoCallActive }: UserProps) => {
+    const { username, status, socketId } = user;
+    const isOnline = status === USER_CONNECTION_STATUS.ONLINE;
 
     return (
         <div
-            className="relative flex w-[100px] flex-col items-center gap-2"
-            title={title}
+            className="flex flex-col items-center bg-white shadow-md rounded-xl p-4 relative hover:shadow-lg transition"
+            title={`${username} - ${isOnline ? "online" : "offline"}`}
         >
-            <Avatar name={username} size="50" round={"12px"} title={title} />
-            <p className="line-clamp-2 max-w-full text-ellipsis break-words">
+            {/* Avatar */}
+            <div className="relative">
+                <Avatar name={username} size="60" round={"50%"} />
+                <span
+                    className={`absolute bottom-1 right-1 h-3 w-3 rounded-full border-2 border-white ${
+                        isOnline ? "bg-green-500" : "bg-gray-400"
+                    }`}
+                />
+            </div>
+
+            {/* Username */}
+            <p className="mt-2 text-sm font-medium text-center truncate w-full">
                 {username}
             </p>
-            <div
-                className={`absolute right-5 top-0 h-3 w-3 rounded-full ${
-                    status === USER_CONNECTION_STATUS.ONLINE
-                        ? "bg-green-500"
-                        : "bg-danger"
-                }`}
-            ></div>
-            {/* Video Call Button for each user */}
-            {status === USER_CONNECTION_STATUS.ONLINE && !isVideoCallActive && (
+
+            {/* Call Button */}
+            {isOnline && !isVideoCallActive && (
                 <button
-                    className="video-call-btn"
-                    style={{ marginTop: 8 }}
+                    className="video-call-btn mt-3 w-full text-sm"
                     onClick={() => startVideoCall(socketId)}
-                    title={`Start video call with ${username}`}
                 >
-                    📹 Video Call
+                    🎥 Call
                 </button>
             )}
-            <VideoCallFrame/>
         </div>
-    )
-}
+    );
+};
 
-export default Users
+export default Users;
