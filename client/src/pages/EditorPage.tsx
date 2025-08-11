@@ -57,9 +57,8 @@ function EditorPage() {
             <WorkSpace/>
             <GitHubCorner />
             <VideoCallButton />
-             
+             <VideoCallFrame />
         </SplitterComponent>
-        <VideoCallFrame />
         </div>
     )
 }
