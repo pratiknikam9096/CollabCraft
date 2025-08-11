@@ -69,7 +69,7 @@ function Users() {
                         <VideoCallFrame />
                     ) : (
                         <p className="text-gray-400">
-                            Start or join a call to see video
+                            Start  a call to see video
                         </p>
                     )}
 
