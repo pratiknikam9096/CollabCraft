@@ -1,21 +1,16 @@
 import { useAppContext } from "@/context/AppContext"
 import { RemoteUser, USER_CONNECTION_STATUS } from "@/types/user"
 import Avatar from "react-avatar"
-import { useVideoCall, VideoCallFrame } from "../../context/VideoCallContext"
+import { useVideoCall } from "../../context/VideoCallContext"
 import "./../../context/VideoCall.css"
+import { VideoCallFrame } from "../../context/VideoCallContext"
 
 function Users() {
     const { users } = useAppContext()
     const { startVideoCall, joinVideoCall, isVideoCallActive } = useVideoCall()
 
     return (
-        <div className="flex min-h-[200px] flex-grow flex-col items-center justify-center overflow-y-auto py-2">
-            {/* Show video call visual in user space when active */}
-            {isVideoCallActive && (
-                <div className="video-call-in-userspace" style={{ marginBottom: 16 }}>
-                    <VideoCallFrame />
-                </div>
-            )}
+        <div className="flex min-h-[200px] flex-grow justify-center overflow-y-auto py-2">
             <div className="flex h-full w-full flex-wrap items-start gap-x-2 gap-y-6">
                 {users.map((user) => (
                     <User
@@ -40,9 +35,11 @@ function Users() {
                     <span>Video call in progress</span>
                 )}
             </div>
+            <VideoCallFrame />
         </div>
     )
 }
+
 type UserProps = {
     user: RemoteUser
     startVideoCall: (targetSocketId?: string) => void
