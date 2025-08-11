@@ -3,6 +3,7 @@ import { RemoteUser, USER_CONNECTION_STATUS } from "@/types/user"
 import Avatar from "react-avatar"
 import { useVideoCall } from "../../context/VideoCallContext"
 import "./../../context/VideoCall.css"
+import { VideoCallFrame } from "../../context/VideoCallContext"
 
 function Users() {
     const { users } = useAppContext()
@@ -34,6 +35,7 @@ function Users() {
                     <span>Video call in progress</span>
                 )}
             </div>
+            <VideoCallFrame />
         </div>
     )
 }
@@ -75,6 +77,7 @@ const User = ({ user, startVideoCall, isVideoCallActive }: UserProps) => {
                     📹 Video Call
                 </button>
             )}
+
         </div>
     )
 }
