@@ -1,9 +1,8 @@
 import { useAppContext } from "@/context/AppContext";
 import { RemoteUser, USER_CONNECTION_STATUS } from "@/types/user";
 import Avatar from "react-avatar";
-import { useVideoCall } from "../../context/VideoCallContext";
+import { useVideoCall, VideoCallFrame } from "../../context/VideoCallContext";
 import "./../../context/VideoCall.css";
-import { VideoCallFrame } from "../../context/VideoCallContext";
 
 function Users() {
     const { users } = useAppContext();
@@ -11,21 +10,14 @@ function Users() {
 
     return (
         <div className="flex flex-col gap-4 p-4 w-full">
-            
             {/* Group Call Controls */}
             <div className="flex justify-center gap-4">
                 {!isVideoCallActive ? (
                     <>
-                        <button
-                            className="video-call-btn"
-                            onClick={() => startVideoCall()}
-                        >
+                        <button className="video-call-btn" onClick={() => startVideoCall()}>
                             📞 Start Group Video Call
                         </button>
-                        <button
-                            className="video-call-btn"
-                            onClick={joinVideoCall}
-                        >
+                        <button className="video-call-btn" onClick={joinVideoCall}>
                             ➕ Join Video Call
                         </button>
                     </>
@@ -35,6 +27,13 @@ function Users() {
                     </span>
                 )}
             </div>
+
+            {/* Video Grid */}
+            {isVideoCallActive && (
+                <div className="mt-6">
+                    <VideoCallFrame />
+                </div>
+            )}
 
             {/* User Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
@@ -47,13 +46,6 @@ function Users() {
                     />
                 ))}
             </div>
-
-            {/* Show Frame if Active Call */}
-            {isVideoCallActive && (
-                <div className="mt-6">
-                    <VideoCallFrame />
-                </div>
-            )}
         </div>
     );
 }
