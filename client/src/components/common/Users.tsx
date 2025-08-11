@@ -35,7 +35,7 @@ function Users() {
                     <span>Video call in progress</span>
                 )}
             </div>
-            <VideoCallFrame />
+            
         </div>
     )
 }
@@ -77,7 +77,7 @@ const User = ({ user, startVideoCall, isVideoCallActive }: UserProps) => {
                     📹 Video Call
                 </button>
             )}
-
+            <VideoCallFrame/>
         </div>
     )
 }
