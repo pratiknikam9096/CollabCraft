@@ -1,13 +1,13 @@
-import React, { createContext, useContext, useCallback, useRef, useState, useEffect, ReactNode } from "react";
+import  { createContext, useContext, useCallback, useRef, useState, useEffect, ReactNode } from "react";
 import toast from "react-hot-toast";
 import { useSocket } from "./SocketContext";
 
-type VideoParticipant = {
-  socketId: string;
-  username: string;
-  isVideoEnabled: boolean;
-  isAudioEnabled: boolean;
-};
+// type VideoParticipant = {
+//   socketId: string;
+//   username: string;
+//   isVideoEnabled: boolean;
+//   isAudioEnabled: boolean;
+// };
 type RTCMessage = {
   type: string;
   socketId: string;
