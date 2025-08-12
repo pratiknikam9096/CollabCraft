@@ -6,7 +6,7 @@ import "./../../context/VideoCall.css";
 
 function Users() {
     const { users } = useAppContext();
-    const { startVideoCall, joinVideoCall, isVideoCallActive } = useVideoCall();
+    const { startTeamVideoCall, joinTeamVideoCall, isVideoCallActive } = useVideoCall();
 
     return (
         <div className="flex flex-col gap-4 p-4 w-full">
@@ -14,10 +14,10 @@ function Users() {
             <div className="flex justify-center gap-4">
                 {!isVideoCallActive ? (
                     <>
-                        <button className="video-call-btn" onClick={() => startVideoCall()}>
+                        <button className="video-call-btn" onClick={() => startTeamVideoCall()}>
                             📞 Start Group Video Call
                         </button>
-                        <button className="video-call-btn" onClick={joinVideoCall}>
+                        <button className="video-call-btn" onClick={joinTeamVideoCall}>
                             ➕ Join Video Call
                         </button>
                     </>
@@ -41,7 +41,7 @@ function Users() {
                     <UserCard
                         key={user.socketId}
                         user={user}
-                        startVideoCall={startVideoCall}
+                        startVideoCall={startTeamVideoCall}
                         isVideoCallActive={isVideoCallActive}
                     />
                 ))}
@@ -52,12 +52,12 @@ function Users() {
 
 type UserProps = {
     user: RemoteUser;
-    startVideoCall: (targetSocketId?: string) => void;
+    startVideoCall: () => void;
     isVideoCallActive: boolean;
 };
 
 const UserCard = ({ user, startVideoCall, isVideoCallActive }: UserProps) => {
-    const { username, status, socketId } = user;
+    const { username, status } = user;
     const isOnline = status === USER_CONNECTION_STATUS.ONLINE;
 
     return (
@@ -84,7 +84,7 @@ const UserCard = ({ user, startVideoCall, isVideoCallActive }: UserProps) => {
             {isOnline && !isVideoCallActive && (
                 <button
                     className="video-call-btn mt-3 w-full text-sm"
-                    onClick={() => startVideoCall(socketId)}
+                    onClick={() => startVideoCall()}
                 >
                     🎥 Call
                 </button>

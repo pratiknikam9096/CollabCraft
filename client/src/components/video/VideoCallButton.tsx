@@ -22,12 +22,12 @@ function VideoCallButton({ className }: VideoCallButtonProps) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
     // Get team members in the current room
-    const teamMembers = users.filter(user => user.roomId === currentUser.roomId)
-    const hasTeamMembers = teamMembers.length > 1
+            const teamMembers = users.filter(user => user.roomId === currentUser.roomId)
+        const hasTeamMembers = teamMembers.length > 0
 
     const handleStartCall = async () => {
         if (!hasTeamMembers) {
-            toast.error("You need at least one team member to start a video call")
+            toast.error("You need to be in a room to start a video call")
             return
         }
         
@@ -97,16 +97,16 @@ function VideoCallButton({ className }: VideoCallButtonProps) {
                             </p>
                             <div className="space-y-1">
                                 {teamMembers.map((member) => (
-                                    <div key={member.socketId} className="flex items-center gap-2">
+                                    <div key={member.socketId || member.username} className="flex items-center gap-2">
                                         <div className={cn(
                                             "w-2 h-2 rounded-full",
-                                            member.socketId === currentUser.socketId 
+                                            member.username === currentUser.username 
                                                 ? "bg-green-500" 
                                                 : "bg-blue-500"
                                         )}></div>
                                         <span className="text-white text-sm">
                                             {member.username}
-                                            {member.socketId === currentUser.socketId && " (You)"}
+                                            {member.username === currentUser.username && " (You)"}
                                         </span>
                                     </div>
                                 ))}

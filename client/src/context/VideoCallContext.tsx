@@ -11,6 +11,8 @@ type VideoParticipant = {
   isScreenSharing: boolean;
   stream: MediaStream | null;
   isLocal: boolean;
+  isSpeaking: boolean;
+  connectionQuality: 'excellent' | 'good' | 'fair' | 'poor';
 };
 
 type RTCMessage = {
@@ -34,6 +36,9 @@ type VideoCallContextType = {
   toggleAudio: () => void;
   toggleScreenShare: () => void;
   leaveVideoCall: () => void;
+  muteParticipant: (socketId: string) => void;
+  spotlightParticipant: (socketId: string) => void;
+  getParticipantStats: (socketId: string) => any;
 };
 
 const VideoCallContext = createContext<VideoCallContextType | null>(null);
@@ -49,7 +54,10 @@ type Props = { children: ReactNode };
 const rtcConfig = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" }
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" }
   ]
 };
 
@@ -64,9 +72,51 @@ const VideoCallContextProvider = ({ children }: Props) => {
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenShareStream, setScreenShareStream] = useState<MediaStream | null>(null);
+  const [spotlightedParticipant, setSpotlightedParticipant] = useState<string | null>(null);
   
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
+  const connectionStats = useRef<Map<string, any>>(new Map());
+  const voiceActivityDetectors = useRef<Map<string, { analyser: AnalyserNode; dataArray: Uint8Array; interval: NodeJS.Timeout }>>(new Map());
+
+  // Voice Activity Detection
+  const setupVoiceActivityDetection = useCallback((stream: MediaStream, socketId: string) => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      source.connect(analyser);
+      
+      const detectVoice = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / bufferLength;
+        const isSpeaking = average > 30; // Threshold for voice detection
+        
+        // Update connection stats with voice activity
+        connectionStats.current.set(socketId, {
+          ...connectionStats.current.get(socketId),
+          isSpeaking,
+          voiceLevel: average
+        });
+      };
+      
+      const interval = setInterval(detectVoice, 100); // Check every 100ms
+      
+      voiceActivityDetectors.current.set(socketId, {
+        analyser,
+        dataArray,
+        interval
+      });
+      
+    } catch (error) {
+      console.error('Failed to setup voice activity detection:', error);
+    }
+  }, []);
 
   // Get all team members in the current room
   const getTeamMembers = useCallback(() => {
@@ -98,6 +148,76 @@ const VideoCallContextProvider = ({ children }: Props) => {
       }
     };
 
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log(`ICE connection state for ${socketId}:`, peerConnection.iceConnectionState);
+      
+      // Update connection quality based on ICE state
+      let quality: 'excellent' | 'good' | 'fair' | 'poor' = 'good';
+      switch (peerConnection.iceConnectionState) {
+        case 'connected':
+        case 'completed':
+          quality = 'excellent';
+          break;
+        case 'checking':
+          quality = 'good';
+          break;
+        case 'disconnected':
+          quality = 'fair';
+          break;
+        case 'failed':
+        case 'closed':
+          quality = 'poor';
+          break;
+      }
+      
+      connectionStats.current.set(socketId, { 
+        ...connectionStats.current.get(socketId),
+        quality,
+        iceState: peerConnection.iceConnectionState
+      });
+    };
+
+    peerConnection.onconnectionstatechange = () => {
+      console.log(`Connection state for ${socketId}:`, peerConnection.connectionState);
+      
+      // Monitor connection quality
+      if (peerConnection.connectionState === 'connected') {
+        // Start monitoring connection stats
+        const monitorStats = async () => {
+          try {
+            const stats = await peerConnection.getStats();
+            let totalBitrate = 0;
+            let totalPackets = 0;
+            
+            stats.forEach(report => {
+              if (report.type === 'inbound-rtp' && report.mediaType === 'video') {
+                totalBitrate += report.bytesReceived || 0;
+                totalPackets += report.packetsReceived || 0;
+              }
+            });
+            
+            connectionStats.current.set(socketId, {
+              ...connectionStats.current.get(socketId),
+              bitrate: totalBitrate,
+              packets: totalPackets,
+              timestamp: Date.now()
+            });
+          } catch (error) {
+            console.error('Error getting connection stats:', error);
+          }
+        };
+        
+        // Monitor every 2 seconds
+        const interval = setInterval(monitorStats, 2000);
+        
+        // Store interval for cleanup
+        connectionStats.current.set(socketId, {
+          ...connectionStats.current.get(socketId),
+          monitorInterval: interval
+        });
+      }
+    };
+
     peerConnections.current.set(socketId, peerConnection);
     return peerConnection;
   }, [socket]);
@@ -105,13 +225,24 @@ const VideoCallContextProvider = ({ children }: Props) => {
   const startTeamVideoCall = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        }, 
+        audio: { 
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
       });
       
       setLocalStream(stream);
       localStreamRef.current = stream;
       setIsVideoCallActive(true);
+      
+      // Setup voice activity detection for local stream
+      setupVoiceActivityDetection(stream, 'local');
       
       // Notify all team members about the video call
       socket.emit("video-call-signal", {
@@ -129,18 +260,29 @@ const VideoCallContextProvider = ({ children }: Props) => {
       console.error("Failed to start video call:", error);
       toast.error("Failed to start video call. Please check camera and microphone permissions.");
     }
-  }, [socket, currentUser.username, currentUser.roomId, getTeamMembers]);
+  }, [socket, currentUser.username, currentUser.roomId, getTeamMembers, setupVoiceActivityDetection]);
 
   const joinTeamVideoCall = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: true 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        }, 
+        audio: { 
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
       });
       
       setLocalStream(stream);
       localStreamRef.current = stream;
       setIsVideoCallActive(true);
+      
+      // Setup voice activity detection for local stream
+      setupVoiceActivityDetection(stream, 'local');
       
       // Notify others that you've joined
       socket.emit("video-call-signal", {
@@ -157,7 +299,7 @@ const VideoCallContextProvider = ({ children }: Props) => {
       console.error("Failed to join video call:", error);
       toast.error("Failed to join video call. Please check camera and microphone permissions.");
     }
-  }, [socket, currentUser.username, currentUser.roomId]);
+  }, [socket, currentUser.username, currentUser.roomId, setupVoiceActivityDetection]);
 
   const toggleVideo = useCallback(() => {
     if (localStreamRef.current) {
@@ -199,7 +341,11 @@ const VideoCallContextProvider = ({ children }: Props) => {
     try {
       if (!isScreenSharing) {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
-          video: true, 
+          video: { 
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 }
+          }, 
           audio: true 
         });
         
@@ -233,7 +379,13 @@ const VideoCallContextProvider = ({ children }: Props) => {
         }
         
         // Restore camera video
-        const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const cameraStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 }
+          } 
+        });
         const videoTrack = cameraStream.getVideoTracks()[0];
         
         if (localStreamRef.current) {
@@ -261,6 +413,19 @@ const VideoCallContextProvider = ({ children }: Props) => {
     }
   }, [isScreenSharing, screenShareStream]);
 
+  const muteParticipant = useCallback((socketId: string) => {
+    // This would be implemented for admin controls
+    toast.success(`Mute functionality for ${socketId} coming soon`);
+  }, []);
+
+  const spotlightParticipant = useCallback((socketId: string) => {
+    setSpotlightedParticipant(spotlightedParticipant === socketId ? null : socketId);
+  }, [spotlightedParticipant]);
+
+  const getParticipantStats = useCallback((socketId: string) => {
+    return connectionStats.current.get(socketId) || null;
+  }, []);
+
   const leaveVideoCall = useCallback(() => {
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
@@ -273,10 +438,18 @@ const VideoCallContextProvider = ({ children }: Props) => {
       setScreenShareStream(null);
     }
     
+    // Cleanup voice activity detection
+    const localDetector = voiceActivityDetectors.current.get('local');
+    if (localDetector) {
+      clearInterval(localDetector.interval);
+      voiceActivityDetectors.current.delete('local');
+    }
+    
     setIsVideoCallActive(false);
     setIsVideoEnabled(true);
     setIsAudioEnabled(true);
     setIsScreenSharing(false);
+    setSpotlightedParticipant(null);
     
     socket.emit("video-call-signal", { 
       type: "team-video-call-leave", 
@@ -299,13 +472,30 @@ const VideoCallContextProvider = ({ children }: Props) => {
       setScreenShareStream(null);
     }
     
+    // Cleanup all peer connections
     peerConnections.current.forEach(pc => pc.close());
     peerConnections.current.clear();
+    
+    // Cleanup all voice activity detectors
+    voiceActivityDetectors.current.forEach(detector => {
+      clearInterval(detector.interval);
+    });
+    voiceActivityDetectors.current.clear();
+    
+    // Cleanup all connection stats intervals
+    connectionStats.current.forEach(stats => {
+      if (stats.monitorInterval) {
+        clearInterval(stats.monitorInterval);
+      }
+    });
+    connectionStats.current.clear();
+    
     setRemoteStreams(new Map());
     setIsVideoCallActive(false);
     setIsVideoEnabled(true);
     setIsAudioEnabled(true);
     setIsScreenSharing(false);
+    setSpotlightedParticipant(null);
     
     socket.emit("video-call-signal", { 
       type: "team-video-call-end", 
@@ -316,12 +506,13 @@ const VideoCallContextProvider = ({ children }: Props) => {
     toast.success("Video call ended");
   }, [localStream, screenShareStream, socket, currentUser.username]);
 
-  // Compute participants list
+  // Compute participants list with enhanced information
   const participants = useMemo(() => {
     const teamMembers = getTeamMembers();
     const participantsList: VideoParticipant[] = [];
     
     // Add local user
+    const localStats = connectionStats.current.get('local');
     participantsList.push({
       socketId: "local",
       username: currentUser.username,
@@ -329,13 +520,17 @@ const VideoCallContextProvider = ({ children }: Props) => {
       isAudioEnabled,
       isScreenSharing,
       stream: localStream,
-      isLocal: true
+      isLocal: true,
+      isSpeaking: localStats?.isSpeaking || false,
+      connectionQuality: localStats?.quality || 'excellent'
     });
     
     // Add remote participants
     teamMembers.forEach(member => {
       if (member.socketId !== socket.id) {
         const stream = remoteStreams.get(member.socketId);
+        const remoteStats = connectionStats.current.get(member.socketId);
+        
         participantsList.push({
           socketId: member.socketId,
           username: member.username,
@@ -343,7 +538,9 @@ const VideoCallContextProvider = ({ children }: Props) => {
           isAudioEnabled: stream ? stream.getAudioTracks().some(t => t.enabled) : false,
           isScreenSharing: false, // Remote screen sharing not implemented yet
           stream: stream || null,
-          isLocal: false
+          isLocal: false,
+          isSpeaking: remoteStats?.isSpeaking || false,
+          connectionQuality: remoteStats?.quality || 'good'
         });
       }
     });
@@ -422,7 +619,10 @@ const VideoCallContextProvider = ({ children }: Props) => {
       toggleVideo,
       toggleAudio,
       toggleScreenShare,
-      leaveVideoCall
+      leaveVideoCall,
+      muteParticipant,
+      spotlightParticipant,
+      getParticipantStats
     }}>
       {children}
     </VideoCallContext.Provider>

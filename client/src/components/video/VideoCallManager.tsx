@@ -8,10 +8,7 @@ function VideoCallManager() {
     const [showInterface, setShowInterface] = useState(false)
     const [isMinimized, setIsMinimized] = useState(false)
 
-    const handleShowInterface = () => {
-        setShowInterface(true)
-        setIsMinimized(false)
-    }
+
 
     const handleMinimize = () => {
         setIsMinimized(!isMinimized)

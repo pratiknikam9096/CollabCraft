@@ -1,6 +1,6 @@
 import { useVideoCall } from "@/context/VideoCallContext"
 import { useAppContext } from "@/context/AppContext"
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState } from "react"
 import { 
     BsCameraVideo, 
     BsCameraVideoOff, 
@@ -14,10 +14,13 @@ import {
     BsGrid3X3,
     BsGrid1X2,
     BsArrowsAngleExpand,
-    BsArrowsAngleContract
+    BsThreeDots,
+    BsChat,
+    BsRecordCircle
 } from "react-icons/bs"
 import { IoClose } from "react-icons/io5"
 import cn from "classnames"
+import toast from "react-hot-toast"
 
 interface VideoCallInterfaceProps {
     isMinimized: boolean
@@ -29,13 +32,14 @@ interface VideoFrameProps {
     participant: any
     isResizable?: boolean
     onResize?: (size: { width: number; height: number }) => void
+    onSpotlight?: (socketId: string) => void
     className?: string
+    isMainView?: boolean
 }
 
 function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInterfaceProps) {
     const {
         participants,
-        isVideoCallActive,
         isVideoEnabled,
         isAudioEnabled,
         isScreenSharing,
@@ -50,6 +54,9 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [layout, setLayout] = useState<'grid' | 'spotlight'>('grid')
     const [spotlightParticipant, setSpotlightParticipant] = useState<string | null>(null)
+    const [showChat, setShowChat] = useState(false)
+    const [isRecording, setIsRecording] = useState(false)
+    const [showParticipants, setShowParticipants] = useState(true)
 
     const handleEndCall = () => {
         endVideoCall()
@@ -76,6 +83,12 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
 
     const setSpotlight = (socketId: string) => {
         setSpotlightParticipant(spotlightParticipant === socketId ? null : socketId)
+    }
+
+    const toggleRecording = () => {
+        setIsRecording(!isRecording)
+        // TODO: Implement actual recording functionality
+        toast.success(isRecording ? "Recording stopped" : "Recording started")
     }
 
     if (isMinimized) {
@@ -115,9 +128,21 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
                             <p className="text-gray-300 text-sm">
                                 {participants.length} participant{participants.length !== 1 ? 's' : ''} • Room: {currentUser.roomId}
                             </p>
+                            {/* Network Status */}
+                            <div className="flex items-center gap-2 mt-1">
+                                <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span className="text-green-400 text-xs">Network: Good</span>
+                                </div>
+                                <span className="text-gray-400 text-xs">•</span>
+                                <span className="text-blue-400 text-xs">
+                                    {participants.filter(p => p.isSpeaking).length} speaking
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {/* Layout Toggle */}
                         <button
                             onClick={toggleLayout}
                             className="p-2 rounded-full bg-darkHover hover:bg-gray-600 text-white transition-colors"
@@ -125,12 +150,44 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
                         >
                             {layout === 'grid' ? <BsGrid1X2 size={20} /> : <BsGrid3X3 size={20} />}
                         </button>
+                        
+                        {/* Participants Toggle */}
+                        <button
+                            onClick={() => setShowParticipants(!showParticipants)}
+                            className={cn(
+                                "p-2 rounded-full transition-colors",
+                                showParticipants 
+                                    ? "bg-primary text-black" 
+                                    : "bg-darkHover hover:bg-gray-600 text-white"
+                            )}
+                            title="Toggle participants list"
+                        >
+                            <BsPersonVideo3 size={20} />
+                        </button>
+                        
+                        {/* Chat Toggle */}
+                        <button
+                            onClick={() => setShowChat(!showChat)}
+                            className={cn(
+                                "p-2 rounded-full transition-colors",
+                                showChat 
+                                    ? "bg-primary text-black" 
+                                    : "bg-darkHover hover:bg-gray-600 text-white"
+                            )}
+                            title="Toggle chat"
+                        >
+                            <BsChat size={20} />
+                        </button>
+                        
+                        {/* Fullscreen */}
                         <button
                             onClick={toggleFullscreen}
                             className="p-2 rounded-full bg-darkHover hover:bg-gray-600 text-white transition-colors"
                         >
                             {isFullscreen ? <BsFullscreenExit size={20} /> : <BsFullscreen size={20} />}
                         </button>
+                        
+                        {/* Minimize */}
                         <button
                             onClick={onMinimize}
                             className="p-2 rounded-full bg-darkHover hover:bg-gray-600 text-white transition-colors"
@@ -142,7 +199,13 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
             </div>
 
             {/* Video Grid */}
-            <div className="h-full flex items-center justify-center p-4 pt-20 pb-24">
+            <div className={cn(
+                "h-full flex items-center justify-center p-4 pt-20 pb-24 transition-all duration-300",
+                {
+                    "ml-64": showParticipants, // Show participants sidebar
+                    "mr-80": showChat
+                }
+            )}>
                 {layout === 'grid' ? (
                     <VideoGrid 
                         participants={participants} 
@@ -205,6 +268,21 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
                         <BsDisplay size={24} />
                     </button>
 
+                    {/* Recording */}
+                    <button
+                        onClick={toggleRecording}
+                        className={cn(
+                            "p-4 rounded-full transition-all duration-200",
+                            {
+                                "bg-darkHover hover:bg-gray-600 text-white": !isRecording,
+                                "bg-red-500 hover:bg-red-600 text-white": isRecording
+                            }
+                        )}
+                        title={isRecording ? "Stop recording" : "Start recording"}
+                    >
+                        <BsRecordCircle size={24} />
+                    </button>
+
                     {/* Leave Call */}
                     <button
                         onClick={handleLeaveCall}
@@ -224,6 +302,112 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
                     </button>
                 </div>
             </div>
+
+            {/* Chat Sidebar */}
+            {showChat && (
+                <div className="absolute right-0 top-0 bottom-0 w-80 bg-dark border-l border-gray-600 z-20">
+                    <div className="p-4">
+                        <h3 className="text-white font-semibold mb-4">Call Chat</h3>
+                        <div className="text-gray-400 text-sm">
+                            Chat functionality coming soon...
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Participants List Sidebar */}
+            {showParticipants && (
+                <div className="absolute left-0 top-0 bottom-0 w-64 bg-dark border-r border-gray-600 z-20">
+                    <div className="p-4">
+                        <h3 className="text-white font-semibold mb-4">Participants ({participants.length})</h3>
+                        <div className="space-y-2">
+                            {participants.map((participant) => (
+                                <div 
+                                    key={participant.socketId}
+                                    className={cn(
+                                        "flex items-center gap-3 p-3 rounded-lg transition-colors",
+                                        {
+                                            "bg-primary/20 border border-primary": participant.isLocal,
+                                            "bg-darkHover": !participant.isLocal
+                                        }
+                                    )}
+                                >
+                                    {/* Avatar/Status */}
+                                    <div className="relative">
+                                        <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                                            {participant.stream ? (
+                                                <BsCameraVideo className="text-white" size={20} />
+                                            ) : (
+                                                <BsCameraVideoOff className="text-gray-400" size={20} />
+                                            )}
+                                        </div>
+                                        {/* Speaking indicator */}
+                                        {participant.isSpeaking && (
+                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-dark"></div>
+                                        )}
+                                        {/* Local indicator */}
+                                        {participant.isLocal && (
+                                            <div className="absolute -top-1 -left-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-dark text-xs text-white flex items-center justify-center">
+                                                Y
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Participant Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-white font-medium truncate">
+                                                {participant.username}
+                                            </span>
+                                            {participant.isLocal && (
+                                                <span className="text-blue-400 text-xs">(You)</span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs">
+                                            {/* Connection Quality */}
+                                            <span className={cn(
+                                                "px-2 py-1 rounded",
+                                                {
+                                                    "bg-green-500/20 text-green-400": participant.connectionQuality === 'excellent',
+                                                    "bg-blue-500/20 text-blue-400": participant.connectionQuality === 'good',
+                                                    "bg-yellow-500/20 text-yellow-400": participant.connectionQuality === 'fair',
+                                                    "bg-red-500/20 text-red-400": participant.connectionQuality === 'poor'
+                                                }
+                                            )}>
+                                                {participant.connectionQuality}
+                                            </span>
+                                            
+                                            {/* Status Indicators */}
+                                            {!participant.isVideoEnabled && (
+                                                <span className="text-red-400">📹 Off</span>
+                                            )}
+                                            {!participant.isAudioEnabled && (
+                                                <span className="text-red-400">🎤 Off</span>
+                                            )}
+                                            {participant.isScreenSharing && (
+                                                <span className="text-primary">🖥️ Sharing</span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex gap-1">
+                                        {!participant.isLocal && (
+                                            <button
+                                                onClick={() => setSpotlight(participant.socketId)}
+                                                className="p-2 text-gray-400 hover:text-white transition-colors"
+                                                title="Spotlight"
+                                            >
+                                                <BsArrowsAngleExpand size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
@@ -280,6 +464,7 @@ function VideoSpotlight({ participants, spotlightId, onSpotlight }: {
                         participant={mainParticipant}
                         className="h-full"
                         onSpotlight={onSpotlight}
+                        isMainView={true}
                     />
                 )}
             </div>
@@ -302,10 +487,9 @@ function VideoSpotlight({ participants, spotlightId, onSpotlight }: {
 }
 
 // Individual Video Frame Component
-function VideoFrame({ participant, className, onSpotlight }: VideoFrameProps) {
+function VideoFrame({ participant, className, onSpotlight, isMainView }: VideoFrameProps) {
     const videoRef = useRef<HTMLVideoElement>(null)
-    const [isResizing, setIsResizing] = useState(false)
-    const [size, setSize] = useState({ width: 0, height: 0 })
+    const [showControls, setShowControls] = useState(false)
 
     useEffect(() => {
         if (videoRef.current && participant.stream) {
@@ -319,14 +503,29 @@ function VideoFrame({ participant, className, onSpotlight }: VideoFrameProps) {
         }
     }
 
-    const hasVideo = participant.stream && participant.isVideoEnabled
     const hasAudio = participant.stream && participant.isAudioEnabled
 
+    // Connection quality indicator
+    const getConnectionQualityColor = (quality: string) => {
+        switch (quality) {
+            case 'excellent': return 'bg-green-500'
+            case 'good': return 'bg-blue-500'
+            case 'fair': return 'bg-yellow-500'
+            case 'poor': return 'bg-red-500'
+            default: return 'bg-gray-500'
+        }
+    }
+
     return (
-        <div className={cn(
-            "relative bg-darkHover rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-all duration-200",
-            className
-        )}>
+        <div 
+            className={cn(
+                "relative bg-darkHover rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-all duration-200",
+                className,
+                { "border-primary": isMainView }
+            )}
+            onMouseEnter={() => setShowControls(true)}
+            onMouseLeave={() => setShowControls(false)}
+        >
             {/* Video Element */}
             {participant.stream ? (
                 <video
@@ -339,7 +538,7 @@ function VideoFrame({ participant, className, onSpotlight }: VideoFrameProps) {
             ) : (
                 <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                     <div className="text-center">
-                        <BsCameraVideoOff className="mx-auto mb-2 text-gray-400" size={48} />
+                        <BsCameraVideoOff className="mx-auto mb-2 text-gray-400" size={isMainView ? 64 : 32} />
                         <p className="text-white font-semibold">{participant.username}</p>
                         <p className="text-gray-400 text-sm">
                             {participant.isLocal ? 'Camera off' : 'Connecting...'}
@@ -347,6 +546,24 @@ function VideoFrame({ participant, className, onSpotlight }: VideoFrameProps) {
                     </div>
                 </div>
             )}
+
+            {/* Voice Activity Indicator */}
+            {participant.isSpeaking && (
+                <div className="absolute top-2 left-2">
+                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
+            )}
+
+            {/* Connection Quality Indicator */}
+            <div className="absolute top-2 right-2 flex items-center gap-1">
+                <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    getConnectionQualityColor(participant.connectionQuality)
+                )}></div>
+                {participant.isLocal && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                )}
+            </div>
 
             {/* Overlay Information */}
             <div className="absolute bottom-2 left-2 bg-black/50 rounded px-2 py-1">
@@ -363,26 +580,62 @@ function VideoFrame({ participant, className, onSpotlight }: VideoFrameProps) {
                 {participant.isScreenSharing && (
                     <BsDisplay className="text-primary" size={16} />
                 )}
-                {participant.isLocal && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                {participant.isSpeaking && (
+                    <BsMic className="text-green-400" size={16} />
                 )}
             </div>
 
-            {/* Spotlight Button */}
-            {onSpotlight && (
+            {/* Hover Controls */}
+            {showControls && (
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                    <div className="flex gap-2">
+                        {/* Spotlight Button */}
+                        {onSpotlight && !isMainView && (
+                            <button
+                                onClick={handleSpotlight}
+                                className="p-2 bg-black/70 rounded-full hover:bg-black/90 transition-colors"
+                                title="Spotlight this participant"
+                            >
+                                <BsArrowsAngleExpand className="text-white" size={20} />
+                            </button>
+                        )}
+                        
+                        {/* More Options */}
+                        <button
+                            className="p-2 bg-black/70 rounded-full hover:bg-black/90 transition-colors"
+                            title="More options"
+                        >
+                            <BsThreeDots className="text-white" size={20} />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Spotlight Button - Always visible for main view */}
+            {isMainView && onSpotlight && (
                 <button
                     onClick={handleSpotlight}
-                    className="absolute top-2 right-2 p-1 bg-black/50 rounded hover:bg-black/70 transition-colors opacity-0 group-hover:opacity-100"
-                    title="Spotlight this participant"
+                    className="absolute top-2 right-2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
+                    title="Exit spotlight mode"
                 >
-                    <BsArrowsAngleExpand className="text-white" size={16} />
+                    <BsGrid3X3 className="text-white" size={16} />
                 </button>
             )}
 
-            {/* Resize Handle */}
-            {isResizing && (
-                <div className="absolute inset-0 border-2 border-primary pointer-events-none"></div>
-            )}
+            {/* Connection Quality Badge */}
+            <div className="absolute top-2 left-2 bg-black/50 rounded px-2 py-1">
+                <span className={cn(
+                    "text-xs font-medium",
+                    {
+                        "text-green-400": participant.connectionQuality === 'excellent',
+                        "text-blue-400": participant.connectionQuality === 'good',
+                        "text-yellow-400": participant.connectionQuality === 'fair',
+                        "text-red-400": participant.connectionQuality === 'poor'
+                    }
+                )}>
+                    {participant.connectionQuality}
+                </span>
+            </div>
         </div>
     )
 }
