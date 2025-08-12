@@ -1,45 +1,37 @@
-import { useVideoCall } from "@/context/VideoCallContext"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import VideoCallButton from "./VideoCallButton"
-import VideoCallInterface from "./VideoCallInterface"
+import VideoCallOverlay from "./VideoCallOverlay"
+import { useVideoCall } from "@/context/VideoCallContext"
 
 function VideoCallManager() {
     const { isVideoCallActive } = useVideoCall()
     const [showInterface, setShowInterface] = useState(false)
     const [isMinimized, setIsMinimized] = useState(false)
 
-
-
-    const handleMinimize = () => {
-        setIsMinimized(!isMinimized)
-    }
+    // Automatically show interface when video call becomes active
+    useEffect(() => {
+        if (isVideoCallActive) {
+            setShowInterface(true)
+        }
+    }, [isVideoCallActive])
 
     const handleClose = () => {
         setShowInterface(false)
         setIsMinimized(false)
     }
 
-    // Auto-show interface when video call becomes active
-    if (isVideoCallActive && !showInterface) {
-        setShowInterface(true)
+    const handleMinimize = () => {
+        setIsMinimized(!isMinimized)
     }
 
     return (
         <>
-            {/* Video Call Button - Fixed Position */}
-            <div className="fixed top-4 right-4 z-40">
-                <VideoCallButton 
-                    className="mb-2"
-                />
-            </div>
-
-            {/* Video Call Interface */}
-            {isVideoCallActive && showInterface && (
-                <VideoCallInterface
-                    isMinimized={isMinimized}
-                    onMinimize={handleMinimize}
-                    onClose={handleClose}
-                />
+            {/* Video Call Button - Always visible */}
+            <VideoCallButton />
+            
+            {/* Video Call Overlay - Shows during calls */}
+            {isVideoCallActive && (
+                <VideoCallOverlay onClose={handleClose} />
             )}
         </>
     )

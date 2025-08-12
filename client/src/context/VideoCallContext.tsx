@@ -301,24 +301,6 @@ const VideoCallContextProvider = ({ children }: Props) => {
     }
   }, [socket, currentUser.username, currentUser.roomId, setupVoiceActivityDetection]);
 
-  const toggleVideo = useCallback(() => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsVideoEnabled(videoTrack.enabled);
-        
-        // Update all peer connections
-        peerConnections.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-          if (sender) {
-            sender.replaceTrack(videoTrack);
-          }
-        });
-      }
-    }
-  }, []);
-
   const toggleAudio = useCallback(() => {
     if (localStreamRef.current) {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
@@ -333,6 +315,30 @@ const VideoCallContextProvider = ({ children }: Props) => {
             sender.replaceTrack(audioTrack);
           }
         });
+        
+        // Show feedback
+        toast.success(audioTrack.enabled ? "Microphone enabled" : "Microphone muted");
+      }
+    }
+  }, []);
+
+  const toggleVideo = useCallback(() => {
+    if (localStreamRef.current) {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoEnabled(videoTrack.enabled);
+        
+        // Update all peer connections
+        peerConnections.current.forEach(pc => {
+          const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+        });
+        
+        // Show feedback
+        toast.success(videoTrack.enabled ? "Camera enabled" : "Camera disabled");
       }
     }
   }, []);
@@ -553,18 +559,47 @@ const VideoCallContextProvider = ({ children }: Props) => {
       switch (type) {
         case "team-video-call-start":
           toast.success(`${data.username} started a team video call`);
+          // If we're not the one who started the call, create peer connection and send offer
+          if (socketId !== socket.id && localStreamRef.current) {
+            const peerConnection = createPeerConnection(socketId);
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit("video-call-signal", { type: "offer", socketId, data: offer });
+          }
           break;
           
         case "team-video-call-join":
           toast.success(`${data.username} joined the video call`);
+          // If we're not the one who joined, create peer connection and send offer
+          if (socketId !== socket.id && localStreamRef.current) {
+            const peerConnection = createPeerConnection(socketId);
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit("video-call-signal", { type: "offer", socketId, data: offer });
+          }
           break;
           
         case "team-video-call-leave":
           toast.success(`${data.username} left the video call`);
+          // Clean up peer connection
+          const pc = peerConnections.current.get(socketId);
+          if (pc) {
+            pc.close();
+            peerConnections.current.delete(socketId);
+            setRemoteStreams(prev => {
+              const newMap = new Map(prev);
+              newMap.delete(socketId);
+              return newMap;
+            });
+          }
           break;
           
         case "team-video-call-end":
           toast.success(`${data.username} ended the video call`);
+          // Clean up all connections
+          peerConnections.current.forEach(pc => pc.close());
+          peerConnections.current.clear();
+          setRemoteStreams(new Map());
           break;
           
         case "offer": {

@@ -314,6 +314,19 @@ io.on("connection", (socket) => {
 				})
 		}
 	})
+
+	// Handle chat messages
+	socket.on('chat-message', (data) => {
+		const roomId = getRoomId(socket.id)
+		if (!roomId) return
+		
+		// Broadcast chat message to all users in the room
+		socket.broadcast.to(roomId).emit('chat-message', {
+			username: data.username,
+			message: data.message,
+			timestamp: data.timestamp
+		})
+	})
 })
 
 const PORT = process.env.PORT || 3001

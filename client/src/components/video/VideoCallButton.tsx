@@ -62,25 +62,22 @@ function VideoCallButton({ className }: VideoCallButtonProps) {
     }
 
     return (
-        <div className={cn("relative", className)}>
+        <div className="relative">
             {/* Main Button */}
             <button
-                onClick={toggleDropdown}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
+                    "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200",
                     {
-                        "bg-primary hover:bg-primary/80 text-black": isVideoCallActive,
-                        "bg-darkHover hover:bg-gray-600 text-white": !isVideoCallActive
+                        "bg-primary text-black hover:bg-green-400": isVideoCallActive,
+                        "bg-darkHover text-white hover:bg-gray-600": !isVideoCallActive
                     }
                 )}
-                title={isVideoCallActive ? "Video call active" : "Start video call"}
             >
                 <BsPersonVideo3 size={20} />
-                <span className="hidden sm:inline">
-                    {isVideoCallActive ? "Video Call" : "Video Call"}
-                </span>
+                <span>Video Call</span>
                 {isVideoCallActive && (
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 )}
             </button>
 

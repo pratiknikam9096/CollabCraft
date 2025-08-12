@@ -1,5 +1,6 @@
 import { useVideoCall } from "@/context/VideoCallContext"
 import { useAppContext } from "@/context/AppContext"
+import { useChat } from "@/context/ChatContext"
 import { useEffect, useRef, useState } from "react"
 import { 
     BsCameraVideo, 
@@ -16,7 +17,8 @@ import {
     BsArrowsAngleExpand,
     BsThreeDots,
     BsChat,
-    BsRecordCircle
+    BsRecordCircle,
+    BsSend
 } from "react-icons/bs"
 import { IoClose } from "react-icons/io5"
 import cn from "classnames"
@@ -51,12 +53,20 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
     } = useVideoCall()
     
     const { currentUser } = useAppContext()
+    const { messages, sendMessage, isChatOpen, toggleChat } = useChat()
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [layout, setLayout] = useState<'grid' | 'spotlight'>('grid')
     const [spotlightParticipant, setSpotlightParticipant] = useState<string | null>(null)
     const [showChat, setShowChat] = useState(false)
     const [isRecording, setIsRecording] = useState(false)
     const [showParticipants, setShowParticipants] = useState(true)
+    const [newMessage, setNewMessage] = useState("")
+    const chatEndRef = useRef<HTMLDivElement>(null)
+
+    // Auto-scroll chat to bottom
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const handleEndCall = () => {
         endVideoCall()
@@ -66,6 +76,20 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
     const handleLeaveCall = () => {
         leaveVideoCall()
         onClose()
+    }
+
+    const handleSendMessage = () => {
+        if (newMessage.trim()) {
+            sendMessage(newMessage)
+            setNewMessage("")
+        }
+    }
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            handleSendMessage()
+        }
     }
 
     const toggleFullscreen = () => {
@@ -305,11 +329,81 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
 
             {/* Chat Sidebar */}
             {showChat && (
-                <div className="absolute right-0 top-0 bottom-0 w-80 bg-dark border-l border-gray-600 z-20">
-                    <div className="p-4">
-                        <h3 className="text-white font-semibold mb-4">Call Chat</h3>
-                        <div className="text-gray-400 text-sm">
-                            Chat functionality coming soon...
+                <div className="absolute right-0 top-0 bottom-0 w-80 bg-dark border-l border-gray-600 z-20 flex flex-col">
+                    {/* Chat Header */}
+                    <div className="p-4 border-b border-gray-600">
+                        <h3 className="text-white font-semibold">Call Chat</h3>
+                        <p className="text-gray-400 text-sm">Real-time messaging</p>
+                    </div>
+
+                    {/* Chat Messages */}
+                    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                        {messages.length === 0 ? (
+                            <div className="text-center text-gray-400 py-8">
+                                <BsChat size={32} className="mx-auto mb-2" />
+                                <p>No messages yet</p>
+                                <p className="text-sm">Start the conversation!</p>
+                            </div>
+                        ) : (
+                            messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={cn(
+                                        "flex flex-col",
+                                        msg.isLocal ? "items-end" : "items-start"
+                                    )}
+                                >
+                                    <div
+                                        className={cn(
+                                            "max-w-xs px-3 py-2 rounded-lg",
+                                            msg.isLocal
+                                                ? "bg-primary text-black"
+                                                : "bg-gray-600 text-white"
+                                        )}
+                                    >
+                                        <p className="text-sm">{msg.message}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={cn(
+                                            "text-xs",
+                                            msg.isLocal ? "text-gray-400" : "text-gray-500"
+                                        )}>
+                                            {msg.username}
+                                        </span>
+                                        <span className={cn(
+                                            "text-xs",
+                                            msg.isLocal ? "text-gray-400" : "text-gray-500"
+                                        )}>
+                                            {msg.timestamp.toLocaleTimeString([], { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit' 
+                                            })}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                        <div ref={chatEndRef} />
+                    </div>
+
+                    {/* Chat Input */}
+                    <div className="p-4 border-t border-gray-600">
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                placeholder="Type a message..."
+                                className="flex-1 bg-gray-700 text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-primary focus:outline-none"
+                            />
+                            <button
+                                onClick={handleSendMessage}
+                                disabled={!newMessage.trim()}
+                                className="p-2 bg-primary text-black rounded-lg hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <BsSend size={16} />
+                            </button>
                         </div>
                     </div>
                 </div>
