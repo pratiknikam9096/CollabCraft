@@ -53,7 +53,7 @@ function VideoCallInterface({ isMinimized, onMinimize, onClose }: VideoCallInter
     } = useVideoCall()
     
     const { currentUser } = useAppContext()
-    const { messages, sendMessage, isChatOpen, toggleChat } = useChat()
+    const { messages, sendMessage } = useChat()
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [layout, setLayout] = useState<'grid' | 'spotlight'>('grid')
     const [spotlightParticipant, setSpotlightParticipant] = useState<string | null>(null)

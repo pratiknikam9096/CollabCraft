@@ -1,4 +1,4 @@
-import { useChatRoom } from "@/context/ChatContext"
+import { useChat } from "@/context/ChatContext"
 import { useViews } from "@/context/ViewContext"
 import { VIEWS } from "@/types/view"
 import { useState } from "react"
@@ -13,7 +13,7 @@ interface ViewButtonProps {
 const ViewButton = ({ viewName, icon }: ViewButtonProps) => {
     const { activeView, setActiveView, isSidebarOpen, setIsSidebarOpen } =
         useViews()
-    const { isNewMessage } = useChatRoom()
+    const { messages } = useChat()
     const [showTooltip, setShowTooltip] = useState(true)
 
     const handleViewClick = (viewName: VIEWS) => {
@@ -38,7 +38,7 @@ const ViewButton = ({ viewName, icon }: ViewButtonProps) => {
             >
                 <div className="flex items-center justify-center">{icon}</div>
                 {/* Show dot for new message in chat View Button */}
-                {viewName === VIEWS.CHATS && isNewMessage && (
+                {viewName === VIEWS.CHATS && messages.length > 0 && (
                     <div className="absolute right-0 top-0 h-3 w-3 rounded-full bg-primary"></div>
                 )}
             </button>

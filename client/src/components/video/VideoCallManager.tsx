@@ -5,23 +5,9 @@ import { useVideoCall } from "@/context/VideoCallContext"
 
 function VideoCallManager() {
     const { isVideoCallActive } = useVideoCall()
-    const [showInterface, setShowInterface] = useState(false)
-    const [isMinimized, setIsMinimized] = useState(false)
-
-    // Automatically show interface when video call becomes active
-    useEffect(() => {
-        if (isVideoCallActive) {
-            setShowInterface(true)
-        }
-    }, [isVideoCallActive])
 
     const handleClose = () => {
-        setShowInterface(false)
-        setIsMinimized(false)
-    }
-
-    const handleMinimize = () => {
-        setIsMinimized(!isMinimized)
+        // Handle close if needed
     }
 
     return (

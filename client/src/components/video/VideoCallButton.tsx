@@ -5,11 +5,9 @@ import { BsPersonVideo3, BsTelephone, BsTelephoneX } from "react-icons/bs"
 import { toast } from "react-hot-toast"
 import cn from "classnames"
 
-interface VideoCallButtonProps {
-    className?: string
-}
+interface VideoCallButtonProps {}
 
-function VideoCallButton({ className }: VideoCallButtonProps) {
+function VideoCallButton({}: VideoCallButtonProps) {
     const {
         isVideoCallActive,
         startTeamVideoCall,
@@ -53,9 +51,7 @@ function VideoCallButton({ className }: VideoCallButtonProps) {
         setIsDropdownOpen(false)
     }
 
-    const toggleDropdown = () => {
-        setIsDropdownOpen(!isDropdownOpen)
-    }
+
 
     if (!hasTeamMembers) {
         return null // Don't show button if no team members

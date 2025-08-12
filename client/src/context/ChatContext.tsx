@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useRef, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useCallback, useState, useEffect, ReactNode } from "react";
 import { useSocket } from "./SocketContext";
 import { useAppContext } from "./AppContext";
 import toast from "react-hot-toast";

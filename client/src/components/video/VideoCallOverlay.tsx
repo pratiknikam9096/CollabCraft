@@ -1,6 +1,6 @@
 import { useVideoCall } from "@/context/VideoCallContext"
 import { useAppContext } from "@/context/AppContext"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { BsCameraVideo, BsMic, BsMicMute, BsDisplay, BsTelephone, BsX } from "react-icons/bs"
 import cn from "classnames"
 
@@ -22,7 +22,7 @@ function VideoCallOverlay({ onClose }: VideoCallOverlayProps) {
         participants
     } = useVideoCall()
     
-    const { currentUser } = useAppContext()
+
     const [isMinimized, setIsMinimized] = useState(false)
 
     if (!isVideoCallActive) return null
