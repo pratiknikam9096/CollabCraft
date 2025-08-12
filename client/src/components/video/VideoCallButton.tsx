@@ -1,101 +1,178 @@
 import { useVideoCall } from "@/context/VideoCallContext"
+import { useAppContext } from "@/context/AppContext"
 import { useState } from "react"
-import { BsCameraVideo, BsTelephone } from "react-icons/bs"
-import { IoVideocam } from "react-icons/io5"
-import VideoCallInterface from "./VideoCallInterface"
+import { BsPersonVideo3, BsTelephone, BsTelephoneX } from "react-icons/bs"
+import { toast } from "react-hot-toast"
 import cn from "classnames"
 
-function VideoCallButton() {
-    const { 
-        isVideoCallActive, 
-        startVideoCall, 
+interface VideoCallButtonProps {
+    className?: string
+}
+
+function VideoCallButton({ className }: VideoCallButtonProps) {
+    const {
+        isVideoCallActive,
+        startTeamVideoCall,
+        joinTeamVideoCall,
         endVideoCall,
-        remoteStreams 
+        participants
     } = useVideoCall()
     
-    const [showInterface, setShowInterface] = useState(false)
-    const [isMinimized, setIsMinimized] = useState(false)
+    const { users, currentUser } = useAppContext()
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+
+    // Get team members in the current room
+    const teamMembers = users.filter(user => user.roomId === currentUser.roomId)
+    const hasTeamMembers = teamMembers.length > 1
 
     const handleStartCall = async () => {
-        await startVideoCall()
-        setShowInterface(true)
-        setIsMinimized(false)
+        if (!hasTeamMembers) {
+            toast.error("You need at least one team member to start a video call")
+            return
+        }
+        
+        try {
+            await startTeamVideoCall()
+            setIsDropdownOpen(false)
+        } catch (error) {
+            console.error("Failed to start video call:", error)
+        }
+    }
+
+    const handleJoinCall = async () => {
+        try {
+            await joinTeamVideoCall()
+            setIsDropdownOpen(false)
+        } catch (error) {
+            console.error("Failed to join video call:", error)
+        }
     }
 
     const handleEndCall = () => {
         endVideoCall()
-        setShowInterface(false)
-        setIsMinimized(false)
+        setIsDropdownOpen(false)
     }
 
-    const handleMinimize = () => {
-        setIsMinimized(!isMinimized)
+    const toggleDropdown = () => {
+        setIsDropdownOpen(!isDropdownOpen)
     }
 
-    const handleClose = () => {
-        setShowInterface(false)
-        setIsMinimized(false)
+    if (!hasTeamMembers) {
+        return null // Don't show button if no team members
     }
 
     return (
-        <>
-            {/* Video Call Button */}
-            <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
-                {!isVideoCallActive ? (
-                    <button
-                        onClick={handleStartCall}
-                        className="flex items-center gap-2 bg-primary hover:bg-green-400 text-black px-4 py-2 rounded-lg font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
-                        title="Start Video Call"
-                    >
-                        <IoVideocam size={20} />
-                        <span className="hidden sm:inline">Start Call</span>
-                    </button>
-                ) : (
-                    <div className="flex items-center gap-2">
-                        {/* Call Status */}
-                        <div className="bg-dark/80 backdrop-blur-sm border border-primary/30 rounded-lg px-3 py-2 flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-white text-sm font-medium">
-                                Call Active ({remoteStreams.size + 1})
-                            </span>
+        <div className={cn("relative", className)}>
+            {/* Main Button */}
+            <button
+                onClick={toggleDropdown}
+                className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
+                    {
+                        "bg-primary hover:bg-primary/80 text-black": isVideoCallActive,
+                        "bg-darkHover hover:bg-gray-600 text-white": !isVideoCallActive
+                    }
+                )}
+                title={isVideoCallActive ? "Video call active" : "Start video call"}
+            >
+                <BsPersonVideo3 size={20} />
+                <span className="hidden sm:inline">
+                    {isVideoCallActive ? "Video Call" : "Video Call"}
+                </span>
+                {isVideoCallActive && (
+                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                )}
+            </button>
+
+            {/* Dropdown Menu */}
+            {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-dark border border-gray-600 rounded-lg shadow-xl z-50">
+                    <div className="p-4">
+                        <h3 className="text-white font-semibold mb-3">Team Video Call</h3>
+                        
+                        {/* Team Members Info */}
+                        <div className="mb-4">
+                            <p className="text-gray-300 text-sm mb-2">
+                                Team Members ({teamMembers.length}):
+                            </p>
+                            <div className="space-y-1">
+                                {teamMembers.map((member) => (
+                                    <div key={member.socketId} className="flex items-center gap-2">
+                                        <div className={cn(
+                                            "w-2 h-2 rounded-full",
+                                            member.socketId === currentUser.socketId 
+                                                ? "bg-green-500" 
+                                                : "bg-blue-500"
+                                        )}></div>
+                                        <span className="text-white text-sm">
+                                            {member.username}
+                                            {member.socketId === currentUser.socketId && " (You)"}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Show/Hide Interface */}
-                        <button
-                            onClick={() => setShowInterface(!showInterface)}
-                            className={cn(
-                                "p-2 rounded-lg transition-all duration-200",
-                                {
-                                    "bg-primary hover:bg-green-400 text-black": !showInterface,
-                                    "bg-darkHover hover:bg-gray-600 text-white": showInterface
-                                }
+                        {/* Call Status */}
+                        {isVideoCallActive && (
+                            <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                                <p className="text-green-400 text-sm font-medium">
+                                    Video call active with {participants.length} participant{participants.length !== 1 ? 's' : ''}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="space-y-2">
+                            {!isVideoCallActive ? (
+                                <>
+                                    <button
+                                        onClick={handleStartCall}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/80 text-black rounded-lg transition-colors"
+                                    >
+                                        <BsTelephone size={16} />
+                                        Start Team Call
+                                    </button>
+                                    
+                                    {participants.length > 0 && (
+                                        <button
+                                            onClick={handleJoinCall}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                                        >
+                                            <BsPersonVideo3 size={16} />
+                                            Join Existing Call
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <button
+                                    onClick={handleEndCall}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                                >
+                                    <BsTelephoneX size={16} />
+                                    End Call
+                                </button>
                             )}
-                            title={showInterface ? "Hide video call" : "Show video call"}
-                        >
-                            <BsCameraVideo size={20} />
-                        </button>
+                        </div>
 
-                        {/* End Call */}
-                        <button
-                            onClick={handleEndCall}
-                            className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-200"
-                            title="End call"
-                        >
-                            <BsTelephone size={20} />
-                        </button>
+                        {/* Room Info */}
+                        <div className="mt-4 pt-3 border-t border-gray-600">
+                            <p className="text-gray-400 text-xs">
+                                Room: {currentUser.roomId}
+                            </p>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
-            {/* Video Call Interface */}
-            {isVideoCallActive && showInterface && (
-                <VideoCallInterface
-                    isMinimized={isMinimized}
-                    onMinimize={handleMinimize}
-                    onClose={handleClose}
+            {/* Click outside to close dropdown */}
+            {isDropdownOpen && (
+                <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsDropdownOpen(false)}
                 />
             )}
-        </>
+        </div>
     )
 }
 

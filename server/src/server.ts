@@ -279,10 +279,40 @@ io.on("connection", (socket) => {
 	socket.on('video-call-signal', (data) => {
 		const roomId = getRoomId(socket.id)
 		if (!roomId) return
-		socket.broadcast.to(roomId).emit('video-call-signal', {
-			...data,
-			socketId: socket.id
-		})
+		
+		// Handle team video call events
+		switch (data.type) {
+			case 'team-video-call-start':
+			case 'team-video-call-join':
+			case 'team-video-call-leave':
+			case 'team-video-call-end':
+				// Broadcast to all team members in the room
+				socket.broadcast.to(roomId).emit('video-call-signal', {
+					...data,
+					socketId: socket.id
+				})
+				break
+				
+			case 'offer':
+			case 'answer':
+			case 'ice-candidate':
+				// Handle WebRTC signaling - send to specific user
+				const targetSocketId = data.socketId
+				if (targetSocketId && targetSocketId !== socket.id) {
+					io.to(targetSocketId).emit('video-call-signal', {
+						...data,
+						socketId: socket.id
+					})
+				}
+				break
+				
+			default:
+				// Fallback: broadcast to room
+				socket.broadcast.to(roomId).emit('video-call-signal', {
+					...data,
+					socketId: socket.id
+				})
+		}
 	})
 })
 

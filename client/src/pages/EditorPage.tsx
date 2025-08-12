@@ -3,7 +3,7 @@ import ConnectionStatusPage from "@/components/connection/ConnectionStatusPage"
 import Sidebar from "@/components/sidebar/Sidebar"
 import GitHubCorner from "@/components/GitHubCorner"
 import WorkSpace from "@/components/workspace"
-// import VideoCallButton from "@/components/video/VideoCallButton"
+import VideoCallManager from "@/components/video/VideoCallManager"
 import { useAppContext } from "@/context/AppContext"
 import { useSocket } from "@/context/SocketContext"
 import useFullScreen from "@/hooks/useFullScreen"
@@ -12,7 +12,6 @@ import { SocketEvent } from "@/types/socket"
 import { USER_STATUS, User } from "@/types/user"
 import { useEffect } from "react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
-// import { VideoCallFrame } from "../context/VideoCallContext";
 
 function EditorPage() {
     // Listen user online/offline status
@@ -57,7 +56,7 @@ function EditorPage() {
             <WorkSpace/>
             <GitHubCorner />
         </SplitterComponent>
-        {/* <VideoCallButton /> */}
+        <VideoCallManager />
         
         </div>
     )
