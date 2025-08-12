@@ -1,6 +1,6 @@
 import { useAppContext } from "@/context/AppContext"
 import { useChat } from "@/context/ChatContext"
-import { SyntheticEvent, useEffect, useRef } from "react"
+import { useEffect, useRef } from "react"
 
 function ChatList() {
     const { messages } = useChat()
@@ -37,7 +37,7 @@ function ChatList() {
                                 {message.username}
                             </span>
                             <span className="text-xs text-white">
-                                {message.timestamp}
+                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         </div>
                         <p className="py-1">{message.message}</p>

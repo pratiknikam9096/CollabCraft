@@ -1,5 +1,4 @@
 import { useVideoCall } from "@/context/VideoCallContext"
-import { useAppContext } from "@/context/AppContext"
 import { useState } from "react"
 import { BsCameraVideo, BsMic, BsMicMute, BsDisplay, BsTelephone, BsX } from "react-icons/bs"
 import cn from "classnames"

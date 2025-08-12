@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react"
 import VideoCallButton from "./VideoCallButton"
 import VideoCallOverlay from "./VideoCallOverlay"
 import { useVideoCall } from "@/context/VideoCallContext"
