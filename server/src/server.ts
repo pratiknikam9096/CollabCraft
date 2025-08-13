@@ -62,6 +62,7 @@ function getRoomId(socketId: SocketId): string | null {
 	return roomId
 }
 
+// Function to get user by socket id
 function getUserBySocketId(socketId: SocketId): User | null {
 	const user = userSocketMap.find((user) => user.socketId === socketId)
 	if (!user) {
@@ -71,14 +72,55 @@ function getUserBySocketId(socketId: SocketId): User | null {
 	return user
 }
 
+// Function to cleanup stale offline users
+function cleanupStaleUsers() {
+	const now = Date.now()
+	const beforeCount = userSocketMap.length
+	
+	// Only remove users who have been offline for more than 2 minutes
+	userSocketMap = userSocketMap.filter((user) => {
+		if (user.status === USER_CONNECTION_STATUS.ONLINE) return true
+		
+		// If user has a lastSeen timestamp and has been offline for more than 2 minutes
+		if (user.lastSeen && (now - user.lastSeen) > 120000) {
+			return false // Remove this user
+		}
+		
+		return true // Keep this user
+	})
+	
+	const afterCount = userSocketMap.length
+	if (beforeCount !== afterCount) {
+		console.log(`Cleaned up ${beforeCount - afterCount} stale offline users`)
+	}
+}
+
 io.on("connection", (socket) => {
 	// Handle user actions
 	socket.on(SocketEvent.JOIN_REQUEST, ({ roomId, username }) => {
-		// Check is username exist in the room
-		const isUsernameExist = getUsersInRoom(roomId).filter(
-			(u) => u.username === username
+		console.log(`Join request from ${username} for room ${roomId}`)
+		
+		// Check if this user is already connected with a different socket
+		const existingUser = userSocketMap.find(
+			(u) => u.username === username && u.roomId === roomId
 		)
-		if (isUsernameExist.length > 0) {
+		
+		// If same user trying to reconnect, remove old entry first
+		if (existingUser && existingUser.socketId !== socket.id) {
+			console.log(`User ${username} reconnecting - removing old socket ${existingUser.socketId}`)
+			userSocketMap = userSocketMap.filter(u => u.socketId !== existingUser.socketId)
+		}
+		
+		// Check if username exists in the room (only active users)
+		const activeUsersInRoom = getUsersInRoom(roomId).filter(
+			(u) => u.status === USER_CONNECTION_STATUS.ONLINE && u.username === username
+		)
+		
+		console.log(`Active users in room ${roomId}:`, getUsersInRoom(roomId).map(u => ({ username: u.username, status: u.status })))
+		console.log(`Username ${username} exists check:`, activeUsersInRoom.length > 0)
+		
+		if (activeUsersInRoom.length > 0) {
+			console.log(`Username ${username} already exists in room ${roomId}`)
 			io.to(socket.id).emit(SocketEvent.USERNAME_EXISTS)
 			return
 		}
@@ -91,23 +133,89 @@ io.on("connection", (socket) => {
 			typing: false,
 			socketId: socket.id,
 			currentFile: null,
+			lastSeen: Date.now(),
 		}
 		userSocketMap.push(user)
 		socket.join(roomId)
 		socket.broadcast.to(roomId).emit(SocketEvent.USER_JOINED, { user })
 		const users = getUsersInRoom(roomId)
 		io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user, users })
+		console.log(`User ${username} successfully joined room ${roomId}`)
 	})
 
 	socket.on("disconnecting", () => {
+		console.log(`User disconnecting: ${socket.id}`)
+		const user = getUserBySocketId(socket.id)
+		if (!user) {
+			console.log(`No user found for socket ${socket.id}`)
+			return
+		}
+		
+		const roomId = user.roomId
+		console.log(`User ${user.username} disconnecting from room ${roomId}`)
+		
+		// Mark user as offline but keep in map for potential reconnection
+		userSocketMap = userSocketMap.map((u) => 
+			u.socketId === socket.id 
+				? { ...u, status: USER_CONNECTION_STATUS.OFFLINE, lastSeen: Date.now() }
+				: u
+		)
+		
+		// Don't emit disconnect event yet - user might reconnect
+		// socket.broadcast.to(roomId).emit(SocketEvent.USER_DISCONNECTED, { user })
+		
+		socket.leave(roomId)
+	})
+	
+	// Handle explicit room leave (not just disconnection)
+	socket.on("leave_room", () => {
+		console.log(`User explicitly leaving room: ${socket.id}`)
 		const user = getUserBySocketId(socket.id)
 		if (!user) return
+		
 		const roomId = user.roomId
-		socket.broadcast
-			.to(roomId)
-			.emit(SocketEvent.USER_DISCONNECTED, { user })
+		console.log(`User ${user.username} explicitly leaving room ${roomId}`)
+		
+		// Emit disconnect event and remove user completely
+		socket.broadcast.to(roomId).emit(SocketEvent.USER_DISCONNECTED, { user })
 		userSocketMap = userSocketMap.filter((u) => u.socketId !== socket.id)
 		socket.leave(roomId)
+		
+		console.log(`User ${user.username} completely removed from room ${roomId}`)
+	})
+	
+	// Handle reconnection attempts
+	socket.on("reconnect_attempt", ({ roomId, username }) => {
+		console.log(`Reconnection attempt from ${username} for room ${roomId}`)
+		
+		// Find existing offline user
+		const existingUser = userSocketMap.find(
+			(u) => u.username === username && u.roomId === roomId && u.status === USER_CONNECTION_STATUS.OFFLINE
+		)
+		
+		if (existingUser) {
+			console.log(`Restoring offline user ${username} in room ${roomId}`)
+			
+			// Update the existing user with new socket ID and mark as online
+			userSocketMap = userSocketMap.map(u => 
+				u.username === username && u.roomId === roomId
+					? { ...u, socketId: socket.id, status: USER_CONNECTION_STATUS.ONLINE, lastSeen: Date.now() }
+					: u
+			)
+			
+			socket.join(roomId)
+			
+			// Notify other users that this user is back online
+			socket.broadcast.to(roomId).emit(SocketEvent.USER_ONLINE, { socketId: socket.id })
+			
+			// Send current room state to reconnected user
+			const users = getUsersInRoom(roomId)
+			io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user: existingUser, users })
+			
+			console.log(`User ${username} successfully reconnected to room ${roomId}`)
+		} else {
+			console.log(`No offline user ${username} found in room ${roomId}`)
+		}
 	})
 
 	// Handle file actions
@@ -348,4 +456,7 @@ app.use((err: any, req: Request, res: Response, next: Function) => {
 })
 server.listen(PORT, () => {
 	console.log(`Listening on port ${PORT}`)
+	
+	// Cleanup stale users every 30 seconds
+	setInterval(cleanupStaleUsers, 30000)
 })

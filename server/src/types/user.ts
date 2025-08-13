@@ -11,6 +11,7 @@ interface User {
 	typing: boolean
 	currentFile: string | null
 	socketId: string
+	lastSeen?: number // Timestamp when user was last seen
 }
 
 export { USER_CONNECTION_STATUS, User }

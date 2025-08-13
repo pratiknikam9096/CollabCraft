@@ -42,6 +42,11 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         () =>
             io(BACKEND_URL, {
                 reconnectionAttempts: 2,
+                auth: {
+                    // Send stored room data on reconnection
+                    roomId: localStorage.getItem('currentRoomId'),
+                    username: localStorage.getItem('currentUsername')
+                }
             }),
         [],
     )
@@ -71,6 +76,10 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
             setUsers(users)
             toast.dismiss()
             setStatus(USER_STATUS.JOINED)
+            
+            // Persist room data for refresh recovery
+            localStorage.setItem('currentRoomId', user.roomId)
+            localStorage.setItem('currentUsername', user.username)
 
             if (users.length > 1) {
                 toast.loading("Syncing data, please wait...")
@@ -83,6 +92,12 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         ({ user }: { user: User }) => {
             toast.success(`${user.username} left the room`)
             setUsers(users.filter((u: User) => u.username !== user.username))
+            
+            // Clear stored data if current user left
+            if (user.username === localStorage.getItem('currentUsername')) {
+                localStorage.removeItem('currentRoomId')
+                localStorage.removeItem('currentUsername')
+            }
         },
         [setUsers, users],
     )
@@ -102,6 +117,18 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
     )
 
     useEffect(() => {
+        // Auto-reconnect to room if data exists in localStorage
+        const savedRoomId = localStorage.getItem('currentRoomId')
+        const savedUsername = localStorage.getItem('currentUsername')
+        
+        if (savedRoomId && savedUsername && socket.connected) {
+            // Try reconnection first, then fallback to join request
+            socket.emit("reconnect_attempt", {
+                roomId: savedRoomId,
+                username: savedUsername
+            })
+        }
+
         socket.on("connect_error", handleError)
         socket.on("connect_failed", handleError)
         socket.on(SocketEvent.USERNAME_EXISTS, handleUsernameExist)
