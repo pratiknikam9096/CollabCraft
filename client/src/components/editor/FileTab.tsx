@@ -1,7 +1,9 @@
 import { useFileSystem } from "@/context/FileContext"
+import { useRunCode } from "@/context/RunCodeContext"
 import { getIconClassName } from "@/utils/getIconClassName"
 import { Icon } from "@iconify/react"
 import { IoClose } from "react-icons/io5"
+import { IoPlay } from "react-icons/io5"
 import cn from "classnames"
 import { useEffect, useRef } from "react"
 import customMapping from "@/utils/customMapping"
@@ -16,6 +18,7 @@ function FileTab() {
         updateFileContent,
         setActiveFile,
     } = useFileSystem()
+    const { runCode, isRunning } = useRunCode()
     const fileTabRef = useRef<HTMLDivElement>(null)
     const { setLanguage } = useSettings()
 
@@ -28,6 +31,21 @@ function FileTab() {
         const file = openFiles.find((file) => file.id === fileId)
         if (file) {
             setActiveFile(file)
+        }
+    }
+
+    const handleRunCode = (e: React.MouseEvent, fileId: string) => {
+        e.stopPropagation()
+        if (fileId === activeFile?.id) {
+            runCode()
+        } else {
+            // Switch to the file first, then run
+            const file = openFiles.find((file) => file.id === fileId)
+            if (file) {
+                setActiveFile(file)
+                // Small delay to ensure file is set before running
+                setTimeout(() => runCode(), 100)
+            }
         }
     }
 
@@ -92,9 +110,19 @@ function FileTab() {
                     >
                         {file.name}
                     </p>
+                    <IoPlay
+                        className="ml-2 mr-2 inline rounded-md hover:bg-darkHover p-1 transition-colors"
+                        size={16}
+                        title="Run Code"
+                        onClick={(e) => handleRunCode(e, file.id)}
+                        style={{
+                            opacity: isRunning && file.id === activeFile?.id ? 0.5 : 1,
+                            cursor: isRunning && file.id === activeFile?.id ? 'not-allowed' : 'pointer'
+                        }}
+                    />
                     <IoClose
-                        className="ml-3 inline rounded-md hover:bg-darkHover"
-                        size={20}
+                        className="ml-1 inline rounded-md hover:bg-darkHover p-1"
+                        size={16}
                         onClick={() => closeFile(file.id)}
                     />
                 </span>

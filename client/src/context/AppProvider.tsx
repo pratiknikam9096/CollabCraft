@@ -1,13 +1,13 @@
 import { ReactNode } from "react"
-import { AppContextProvider } from "./AppContext.js"
-import ChatContextProvider from "./ChatContext"
-import { FileContextProvider } from "./FileContext.jsx"
-import { RunCodeContextProvider } from "./RunCodeContext.jsx"
-import { SettingContextProvider } from "./SettingContext.jsx"
-import { SocketProvider } from "./SocketContext.jsx"
-import { ViewContextProvider } from "./ViewContext.js"
-import { CopilotContextProvider } from "./CopilotContext.js"
-import VideoCallContextProvider from "./VideoCallContext";
+import { AppContextProvider } from "./AppContext"
+import { ChatContextProvider } from "./ChatContext"
+import { FileContextProvider } from "./FileContext"
+import { RunCodeContextProvider } from "./RunCodeContext"
+import { SettingContextProvider } from "./SettingContext"
+import { SocketProvider } from "./SocketContext"
+import { ViewContextProvider } from "./ViewContext"
+import { CopilotContextProvider } from "./CopilotContext"
+import VideoCallContextProvider from "./VideoCallContext"
 
 
 function AppProvider({ children }: { children: ReactNode }) {

@@ -1,17 +1,15 @@
 import SplitterComponent from "@/components/SplitterComponent"
 import ConnectionStatusPage from "@/components/connection/ConnectionStatusPage"
-import Sidebar from "@/components/sidebar/Sidebar"
 import GitHubCorner from "@/components/GitHubCorner"
 import WorkSpace from "@/components/workspace"
-import VideoCallManager from "@/components/video/VideoCallManager"
 import { useAppContext } from "@/context/AppContext"
 import { useSocket } from "@/context/SocketContext"
 import useFullScreen from "@/hooks/useFullScreen"
 import useUserActivity from "@/hooks/useUserActivity"
 import { SocketEvent } from "@/types/socket"
-import { USER_STATUS, User } from "@/types/user"
+import { USER_STATUS } from "@/types/user"
 import { useEffect } from "react"
-import { useLocation, useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
 function EditorPage() {
     // Listen user online/offline status
@@ -20,9 +18,8 @@ function EditorPage() {
     useFullScreen()
     const navigate = useNavigate()
     const { roomId } = useParams()
-    const { status, setCurrentUser, currentUser, clearUserData } = useAppContext()
+    const { status, currentUser, clearUserData } = useAppContext()
     const { socket } = useSocket()
-    const location = useLocation()
 
     useEffect(() => {
         // Check if user is authenticated
@@ -77,9 +74,7 @@ function EditorPage() {
     return (
         <div className="flex h-screen w-full flex-col bg-dark">
             <GitHubCorner />
-            <VideoCallManager />
             <SplitterComponent>
-                <Sidebar />
                 <WorkSpace />
             </SplitterComponent>
         </div>
