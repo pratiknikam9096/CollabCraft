@@ -12,6 +12,7 @@ import {
     useContext,
     useEffect,
     useMemo,
+    useRef,
 } from "react"
 import { toast } from "react-hot-toast"
 import { Socket, io } from "socket.io-client"
@@ -38,10 +39,14 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         drawingData,
         setDrawingData,
     } = useAppContext()
+    
     const socket: Socket = useMemo(
         () =>
             io(BACKEND_URL, {
-                reconnectionAttempts: 2,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                timeout: 20000,
                 auth: {
                     // Send stored room data on reconnection
                     roomId: localStorage.getItem('currentRoomId'),
@@ -50,6 +55,11 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
             }),
         [],
     )
+
+    const SYNC_TOAST_ID = 'syncing-toast'
+    const syncingToastRef = useRef<string | null>(null)
+    const hasSyncedRef = useRef(false)
+    const hasRequestedReconnectRef = useRef(false)
 
     const handleError = useCallback(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,8 +91,11 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
             localStorage.setItem('currentRoomId', user.roomId)
             localStorage.setItem('currentUsername', user.username)
 
-            if (users.length > 1) {
-                toast.loading("Syncing data, please wait...")
+            // Show syncing message only once per session if there are other users
+            if (users.length > 1 && !hasSyncedRef.current) {
+                // Use a stable toast id to prevent duplicates
+                syncingToastRef.current = toast.loading("Syncing data, please wait...", { id: SYNC_TOAST_ID }) as unknown as string
+                hasSyncedRef.current = true
             }
         },
         [setCurrentUser, setStatus, setUsers],
@@ -116,35 +129,79 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         [setDrawingData],
     )
 
-    useEffect(() => {
-        // Auto-reconnect to room if data exists in localStorage
-        const savedRoomId = localStorage.getItem('currentRoomId')
-        const savedUsername = localStorage.getItem('currentUsername')
-        
-        if (savedRoomId && savedUsername && socket.connected) {
-            // Try reconnection first, then fallback to join request
-            socket.emit("reconnect_attempt", {
-                roomId: savedRoomId,
-                username: savedUsername
-            })
+    const handleSyncingComplete = useCallback(() => {
+        toast.dismiss(SYNC_TOAST_ID)
+        syncingToastRef.current = null
+        hasSyncedRef.current = true
+        toast.success("Data sync completed!")
+    }, [])
+
+    const handleVideoCallStatus = useCallback(({ isActive, participants, startedBy }: any) => {
+        if (isActive) {
+            // Store video call state for reconnection
+            localStorage.setItem('activeVideoCall', JSON.stringify({
+                isActive: true,
+                participants,
+                startedBy,
+                timestamp: Date.now()
+            }))
         }
+    }, [])
+
+    const handleUserOnline = useCallback(({ socketId, username }: { socketId: string, username: string }) => {
+        toast.success(`${username} is back online`)
+        // Update user status in the users list
+        setUsers(prevUsers => 
+            prevUsers.map(user => 
+                user.username === username 
+                    ? { ...user, status: 'online' as any }
+                    : user
+            )
+        )
+    }, [setUsers])
+
+    useEffect(() => {
+        // Auto-reconnect to room once per connection
+        const onConnect = () => {
+            const savedRoomId = localStorage.getItem('currentRoomId')
+            const savedUsername = localStorage.getItem('currentUsername')
+            const suppressReconnect = sessionStorage.getItem('suppressReconnect') === 'true'
+            if (!hasRequestedReconnectRef.current && savedRoomId && savedUsername && !suppressReconnect) {
+                socket.emit("reconnect_attempt", { roomId: savedRoomId, username: savedUsername })
+                hasRequestedReconnectRef.current = true
+            }
+        }
+
+        if (socket.connected) onConnect()
 
         socket.on("connect_error", handleError)
         socket.on("connect_failed", handleError)
+        socket.on("connect", onConnect)
+        socket.on("disconnect", () => { 
+            hasRequestedReconnectRef.current = false 
+        })
         socket.on(SocketEvent.USERNAME_EXISTS, handleUsernameExist)
         socket.on(SocketEvent.JOIN_ACCEPTED, handleJoiningAccept)
         socket.on(SocketEvent.USER_DISCONNECTED, handleUserLeft)
+        socket.on(SocketEvent.USER_ONLINE, handleUserOnline)
         socket.on(SocketEvent.REQUEST_DRAWING, handleRequestDrawing)
         socket.on(SocketEvent.SYNC_DRAWING, handleDrawingSync)
+        socket.on("syncing-complete", handleSyncingComplete)
+        socket.on("video-call-status", handleVideoCallStatus)
 
         return () => {
             socket.off("connect_error")
             socket.off("connect_failed")
+            socket.off("connect", onConnect)
+            socket.off("disconnect")
             socket.off(SocketEvent.USERNAME_EXISTS)
             socket.off(SocketEvent.JOIN_ACCEPTED)
             socket.off(SocketEvent.USER_DISCONNECTED)
+            socket.off(SocketEvent.USER_ONLINE)
             socket.off(SocketEvent.REQUEST_DRAWING)
             socket.off(SocketEvent.SYNC_DRAWING)
+            socket.off("syncing-complete")
+            socket.off("video-call-status")
         }
     }, [
         handleDrawingSync,
@@ -152,7 +209,10 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         handleJoiningAccept,
         handleRequestDrawing,
         handleUserLeft,
+        handleUserOnline,
         handleUsernameExist,
+        handleSyncingComplete,
+        handleVideoCallStatus,
         setUsers,
         socket,
     ])

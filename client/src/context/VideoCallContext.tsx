@@ -244,6 +244,14 @@ const VideoCallContextProvider = ({ children }: Props) => {
       // Setup voice activity detection for local stream
       setupVoiceActivityDetection(stream, 'local');
       
+      // Store video call state for persistence
+      localStorage.setItem('activeVideoCall', JSON.stringify({
+        isActive: true,
+        participants: [currentUser.username],
+        startedBy: currentUser.username,
+        timestamp: Date.now()
+      }));
+      
       // Notify all team members about the video call
       socket.emit("video-call-signal", {
         type: "team-video-call-start", 
@@ -283,6 +291,16 @@ const VideoCallContextProvider = ({ children }: Props) => {
       
       // Setup voice activity detection for local stream
       setupVoiceActivityDetection(stream, 'local');
+      
+      // Update stored video call state to include this user
+      const storedCall = localStorage.getItem('activeVideoCall');
+      if (storedCall) {
+        const callData = JSON.parse(storedCall);
+        if (!callData.participants.includes(currentUser.username)) {
+          callData.participants.push(currentUser.username);
+          localStorage.setItem('activeVideoCall', JSON.stringify(callData));
+        }
+      }
       
       // Notify others that you've joined
       socket.emit("video-call-signal", {
@@ -457,6 +475,18 @@ const VideoCallContextProvider = ({ children }: Props) => {
     setIsScreenSharing(false);
     setSpotlightedParticipant(null);
     
+    // Update stored video call state
+    const storedCall = localStorage.getItem('activeVideoCall');
+    if (storedCall) {
+      const callData = JSON.parse(storedCall);
+      callData.participants = callData.participants.filter((p: string) => p !== currentUser.username);
+      if (callData.participants.length === 0) {
+        localStorage.removeItem('activeVideoCall');
+      } else {
+        localStorage.setItem('activeVideoCall', JSON.stringify(callData));
+      }
+    }
+    
     socket.emit("video-call-signal", { 
       type: "team-video-call-leave", 
       socketId: socket.id, 
@@ -600,6 +630,9 @@ const VideoCallContextProvider = ({ children }: Props) => {
           peerConnections.current.forEach(pc => pc.close());
           peerConnections.current.clear();
           setRemoteStreams(new Map());
+          setIsVideoCallActive(false);
+          // Clear stored video call state
+          localStorage.removeItem('activeVideoCall');
           break;
           
         case "offer": {
@@ -630,6 +663,92 @@ const VideoCallContextProvider = ({ children }: Props) => {
       socket.off("video-call-signal", handleVideoCallSignal);
     };
   }, [socket, createPeerConnection]);
+
+  // Handle video call status updates from server
+  useEffect(() => {
+    const handleVideoCallStatus = ({ isActive, participants, startedBy }: any) => {
+      if (isActive && !isVideoCallActive) {
+        // There's an active video call we can join
+        setIsVideoCallActive(true);
+        // Optionally auto-join if user was previously in the call
+        const storedCall = localStorage.getItem('activeVideoCall');
+        if (storedCall) {
+          const callData = JSON.parse(storedCall);
+          if (callData.isActive && callData.participants.includes(currentUser.username)) {
+            // Auto-join the call
+            joinTeamVideoCall();
+          }
+        }
+      }
+    };
+
+    socket.on("video-call-status", handleVideoCallStatus);
+    return () => {
+      socket.off("video-call-status", handleVideoCallStatus);
+    };
+  }, [socket, isVideoCallActive, currentUser.username, joinTeamVideoCall]);
+
+  // Restore video call state on page refresh/reload
+  useEffect(() => {
+    const restoreVideoCallState = async () => {
+      const storedCall = localStorage.getItem('activeVideoCall');
+      if (storedCall) {
+        const callData = JSON.parse(storedCall);
+        const now = Date.now();
+        const callAge = now - callData.timestamp;
+        
+        // Only restore if call is recent (within last 5 minutes)
+        if (callData.isActive && callAge < 5 * 60 * 1000) {
+          try {
+            // Check if we can access media devices
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+              video: { 
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
+              }, 
+              audio: { 
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+              } 
+            });
+            
+            setLocalStream(stream);
+            localStreamRef.current = stream;
+            setIsVideoCallActive(true);
+            
+            // Setup voice activity detection for local stream
+            setupVoiceActivityDetection(stream, 'local');
+            
+            // Notify server that we're rejoining the call
+            socket.emit("video-call-signal", {
+              type: "team-video-call-join", 
+              socketId: socket.id, 
+              data: { 
+                username: currentUser.username,
+                roomId: currentUser.roomId
+              }
+            });
+            
+            toast.success("Reconnected to video call!");
+          } catch (error) {
+            console.error("Failed to restore video call:", error);
+            // Clear stored state if we can't restore
+            localStorage.removeItem('activeVideoCall');
+          }
+        } else {
+          // Clear stale video call data
+          localStorage.removeItem('activeVideoCall');
+        }
+      }
+    };
+
+    // Only restore if we have a current user and socket is connected
+    if (currentUser.username && socket.connected) {
+      restoreVideoCallState();
+    }
+  }, [currentUser.username, socket.connected, setupVoiceActivityDetection]);
 
   useEffect(() => {
     return () => {
