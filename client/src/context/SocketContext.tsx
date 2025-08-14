@@ -148,7 +148,7 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [])
 
-    const handleUserOnline = useCallback(({ socketId, username }: { socketId: string, username: string }) => {
+    const handleUserOnline = useCallback(({ username }: { socketId: string, username: string }) => {
         toast.success(`${username} is back online`)
         // Update user status in the users list
         setUsers(prevUsers => 

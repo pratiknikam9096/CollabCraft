@@ -666,7 +666,7 @@ const VideoCallContextProvider = ({ children }: Props) => {
 
   // Handle video call status updates from server
   useEffect(() => {
-    const handleVideoCallStatus = ({ isActive, participants, startedBy }: any) => {
+    const handleVideoCallStatus = ({ isActive }: any) => {
       if (isActive && !isVideoCallActive) {
         // There's an active video call we can join
         setIsVideoCallActive(true);
