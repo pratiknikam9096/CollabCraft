@@ -243,9 +243,13 @@ function endVideoCall(roomId: string) {
 
 // Socket.IO event handlers
 io.on("connection", (socket) => {
+  console.log(`New client connected: ${socket.id}`)
+  
   // Handle user actions
   socket.on(SocketEvent.JOIN_REQUEST, ({ roomId, username }) => {
     console.log(`Join request from ${username} for room ${roomId}`)
+    console.log(`Socket ID: ${socket.id}`)
+    console.log(`Current userSocketMap:`, userSocketMap.map(u => ({ username: u.username, roomId: u.roomId, status: u.status })))
     
     // Check if this user is already connected with a different socket
     const existingUser = userSocketMap.find(
@@ -286,6 +290,10 @@ io.on("connection", (socket) => {
     socket.join(roomId)
     socket.broadcast.to(roomId).emit(SocketEvent.USER_JOINED, { user })
     const users = getUsersInRoom(roomId)
+    
+    console.log(`Emitting JOIN_ACCEPTED to socket ${socket.id} with user:`, user)
+    console.log(`Users in room after join:`, users)
+    
     io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user, users })
     console.log(`User ${username} successfully joined room ${roomId}`)
   })
@@ -310,6 +318,10 @@ io.on("connection", (socket) => {
     
     // Don't emit disconnect event yet - user might reconnect
     socket.leave(roomId)
+  })
+  
+  socket.on("disconnect", () => {
+    console.log(`Client disconnected: ${socket.id}`)
   })
   
   // Handle explicit room leave (not just disconnection)

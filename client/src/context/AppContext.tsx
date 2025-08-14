@@ -61,8 +61,10 @@ function AppContextProvider({ children }: { children: ReactNode }) {
     // Persist user state to localStorage
     useEffect(() => {
         if (currentUser.username && currentUser.roomId) {
+            console.log("Persisting user to localStorage:", currentUser)
             localStorage.setItem("collabcraft_user", JSON.stringify(currentUser))
         } else {
+            console.log("Clearing user from localStorage")
             localStorage.removeItem("collabcraft_user")
         }
     }, [currentUser])
@@ -70,14 +72,17 @@ function AppContextProvider({ children }: { children: ReactNode }) {
     // Persist status to localStorage
     useEffect(() => {
         if (status !== USER_STATUS.INITIAL) {
+            console.log("Persisting status to localStorage:", status)
             localStorage.setItem("collabcraft_status", JSON.stringify(status))
         } else {
+            console.log("Clearing status from localStorage")
             localStorage.removeItem("collabcraft_status")
         }
     }, [status])
 
     // Clear localStorage when user leaves
     const clearUserData = () => {
+        console.log("Clearing user data")
         localStorage.removeItem("collabcraft_user")
         localStorage.removeItem("collabcraft_status")
         setCurrentUser({ username: "", roomId: "" })

@@ -49,6 +49,8 @@ const FormComponent = () => {
         e.preventDefault()
         if (status === USER_STATUS.ATTEMPTING_JOIN) return
         if (!validateForm()) return
+        
+        console.log("Joining room:", { username: currentUser.username, roomId: currentUser.roomId })
         toast.loading("Joining room...")
         setStatus(USER_STATUS.ATTEMPTING_JOIN)
         socket.emit(SocketEvent.JOIN_REQUEST, currentUser)
@@ -71,18 +73,46 @@ const FormComponent = () => {
 
     useEffect(() => {
         if (status === USER_STATUS.DISCONNECTED && !socket.connected) {
+            console.log("Socket disconnected, attempting to connect...")
             socket.connect()
             return
         }
 
-        if (status === USER_STATUS.JOINED) {
+        if (status === USER_STATUS.JOINED && currentUser.username && currentUser.roomId) {
+            // Ensure we have both username and roomId before navigating
             const username = currentUser.username
-            navigate(`/editor/${currentUser.roomId}`, {
-                state: { username },
-                replace: true
-            })
+            const roomId = currentUser.roomId
+            
+            console.log("Status is JOINED, navigating to editor:", { username, roomId })
+            
+            // Add a small delay to ensure state is fully updated
+            setTimeout(() => {
+                navigate(`/editor/${roomId}`, {
+                    state: { username },
+                    replace: true
+                })
+            }, 100)
         }
-    }, [currentUser, navigate, setStatus, socket, status])
+    }, [currentUser.username, currentUser.roomId, navigate, socket, status])
+
+    // Add socket connection status monitoring
+    useEffect(() => {
+        const handleConnect = () => {
+            console.log("Socket connected, ready to join room")
+        }
+        
+        const handleDisconnect = () => {
+            console.log("Socket disconnected")
+        }
+        
+        socket.on("connect", handleConnect)
+        socket.on("disconnect", handleDisconnect)
+        
+        return () => {
+            socket.off("connect", handleConnect)
+            socket.off("disconnect", handleDisconnect)
+        }
+    }, [socket])
 
     return (
         <div className="w-full">

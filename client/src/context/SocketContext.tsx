@@ -82,21 +82,28 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     const handleJoiningAccept = useCallback(
         ({ user, users }: { user: User; users: RemoteUser[] }) => {
+            console.log("Join accepted:", { user, users })
+            
+            // Update user state first
             setCurrentUser(user)
             setUsers(users)
-            toast.dismiss()
-            setStatus(USER_STATUS.JOINED)
             
             // Persist room data for refresh recovery
             localStorage.setItem('currentRoomId', user.roomId)
             localStorage.setItem('currentUsername', user.username)
-
-            // Show syncing message only once per session if there are other users
-            if (users.length > 1 && !hasSyncedRef.current) {
-                // Use a stable toast id to prevent duplicates
-                syncingToastRef.current = toast.loading("Syncing data, please wait...", { id: SYNC_TOAST_ID }) as unknown as string
-                hasSyncedRef.current = true
-            }
+            
+            // Update status after user state is set
+            setTimeout(() => {
+                setStatus(USER_STATUS.JOINED)
+                toast.dismiss()
+                
+                // Show syncing message only once per session if there are other users
+                if (users.length > 1 && !hasSyncedRef.current) {
+                    // Use a stable toast id to prevent duplicates
+                    syncingToastRef.current = toast.loading("Syncing data, please wait...", { id: SYNC_TOAST_ID }) as unknown as string
+                    hasSyncedRef.current = true
+                }
+            }, 50)
         },
         [setCurrentUser, setStatus, setUsers],
     )
