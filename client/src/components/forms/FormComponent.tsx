@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from "uuid"
 
 const FormComponent = () => {
     const location = useLocation()
-    const { currentUser, setCurrentUser, status, setStatus } = useAppContext()
+    const { currentUser, setCurrentUser, status, setStatus, clearUserData } = useAppContext()
     const { socket } = useSocket()
 
     const usernameRef = useRef<HTMLInputElement | null>(null)
@@ -54,6 +54,11 @@ const FormComponent = () => {
         socket.emit(SocketEvent.JOIN_REQUEST, currentUser)
     }
 
+    // Clear any existing user data when component mounts
+    useEffect(() => {
+        clearUserData()
+    }, [clearUserData])
+
     useEffect(() => {
         if (currentUser.roomId.length > 0) return
         if (location.state?.roomId) {
@@ -70,27 +75,17 @@ const FormComponent = () => {
             return
         }
 
-        const isRedirect = sessionStorage.getItem("redirect") || false
-
-        if (status === USER_STATUS.JOINED && !isRedirect) {
+        if (status === USER_STATUS.JOINED) {
             const username = currentUser.username
-            sessionStorage.setItem("redirect", "true")
             navigate(`/editor/${currentUser.roomId}`, {
-                state: {
-                    username,
-                },
+                state: { username },
+                replace: true
             })
-        } else if (status === USER_STATUS.JOINED && isRedirect) {
-            sessionStorage.removeItem("redirect")
-            setStatus(USER_STATUS.DISCONNECTED)
-            socket.disconnect()
-            socket.connect()
         }
-    }, [currentUser, location.state?.redirect, navigate, setStatus, socket, status])
+    }, [currentUser, navigate, setStatus, socket, status])
 
     return (
         <div className="w-full">
-            
             <form onSubmit={joinRoom} className="flex w-full flex-col gap-6">
                 <input
                     type="text"

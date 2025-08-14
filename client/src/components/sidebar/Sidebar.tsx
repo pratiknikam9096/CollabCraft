@@ -9,10 +9,12 @@ import { SocketEvent } from "@/types/socket"
 import { VIEWS } from "@/types/view"
 import { IoCodeSlash } from "react-icons/io5"
 import { MdOutlineDraw } from "react-icons/md"
+import { BsBoxArrowRight } from "react-icons/bs"
 import cn from "classnames"
 import { Tooltip } from 'react-tooltip'
 import { useState } from 'react'
 import { tooltipStyles } from "./tooltipStyles"
+import { useNavigate } from "react-router-dom"
 
 function Sidebar() {
     const {
@@ -23,10 +25,11 @@ function Sidebar() {
         setIsSidebarOpen,
     } = useViews()
     const { minHeightReached } = useResponsive()
-    const { activityState, setActivityState } = useAppContext()
+    const { activityState, setActivityState, clearUserData } = useAppContext()
     const { socket } = useSocket()
     const { isMobile } = useWindowDimensions()
     const [showTooltip, setShowTooltip] = useState(true)
+    const navigate = useNavigate()
 
     const changeState = () => {
         setShowTooltip(false)
@@ -40,6 +43,15 @@ function Sidebar() {
         if (isMobile) {
             setIsSidebarOpen(false)
         }
+    }
+
+    const handleLogout = () => {
+        // Disconnect from socket
+        socket.disconnect()
+        // Clear user data
+        clearUserData()
+        // Navigate to home
+        navigate("/", { replace: true })
     }
 
     return (
@@ -108,6 +120,28 @@ function Sidebar() {
                             float={true}
                         />
                     )}
+                </div>
+
+                {/* Logout Button */}
+                <div className="flex h-fit items-center justify-center">
+                    <button
+                        className="flex items-center justify-center rounded p-1.5 transition-colors duration-200 ease-in-out hover:bg-red-500/20 text-red-400 hover:text-red-300"
+                        onClick={handleLogout}
+                        data-tooltip-id="logout-tooltip"
+                        data-tooltip-content="Leave Room"
+                    >
+                        <BsBoxArrowRight size={24} />
+                    </button>
+                    <Tooltip
+                        id="logout-tooltip"
+                        place="right"
+                        offset={15}
+                        className="!z-50"
+                        style={tooltipStyles}
+                        noArrow={false}
+                        positionStrategy="fixed"
+                        float={true}
+                    />
                 </div>
             </div>
             <div
