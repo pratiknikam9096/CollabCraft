@@ -10,6 +10,7 @@ import { SocketEvent } from "@/types/socket"
 import { USER_STATUS } from "@/types/user"
 import { useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import Sidebar from "@/components/sidebar/Sidebar"
 
 function EditorPage() {
     // Listen user online/offline status
@@ -75,6 +76,7 @@ function EditorPage() {
         <div className="flex h-screen w-full flex-col bg-dark">
             <GitHubCorner />
             <SplitterComponent>
+                <Sidebar />
                 <WorkSpace />
             </SplitterComponent>
         </div>
