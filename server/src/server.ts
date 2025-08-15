@@ -246,7 +246,29 @@ io.on("connection", (socket) => {
   console.log(`New client connected: ${socket.id}`)
   
   // Handle user actions
-  socket.on(SocketEvent.JOIN_REQUEST, ({ roomId, username }) => {
+  socket.on(SocketEvent.JOIN_REQUEST, (data) => {
+    console.log(`Raw JOIN_REQUEST data received:`, data)
+    console.log(`Data type:`, typeof data)
+    console.log(`Data keys:`, Object.keys(data || {}))
+    
+    // Destructure with fallbacks and validation
+    const { roomId, username } = data || {}
+    
+    console.log(`Extracted values - roomId: "${roomId}" (type: ${typeof roomId}), username: "${username}" (type: ${typeof username})`)
+    
+    // Validate the received data
+    if (!roomId || typeof roomId !== 'string') {
+      console.error(`Invalid roomId received: ${roomId}`)
+      io.to(socket.id).emit(SocketEvent.USERNAME_EXISTS) // Use this as a generic error for now
+      return
+    }
+    
+    if (!username || typeof username !== 'string') {
+      console.error(`Invalid username received: ${username}`)
+      io.to(socket.id).emit(SocketEvent.USERNAME_EXISTS) // Use this as a generic error for now
+      return
+    }
+    
     console.log(`Join request from ${username} for room ${roomId}`)
     console.log(`Socket ID: ${socket.id}`)
     console.log(`Current userSocketMap:`, userSocketMap.map(u => ({ username: u.username, roomId: u.roomId, status: u.status })))

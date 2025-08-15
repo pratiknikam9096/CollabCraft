@@ -103,3 +103,4 @@ Browser (xterm.js) ←→ WebSocket ←→ Node.js Server (node-pty) ←→ OS S
 ```
 
 The terminal provides a secure bridge between your web application and the underlying operating system, allowing you to perform development tasks directly from the browser interface.
+

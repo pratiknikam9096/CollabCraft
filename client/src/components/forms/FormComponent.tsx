@@ -24,24 +24,37 @@ const FormComponent = () => {
 
     const handleInputChanges = (e: ChangeEvent<HTMLInputElement>) => {
         const name = e.target.name
-        const value = e.target.value
-        setCurrentUser({ ...currentUser, [name]: value })
+        const value = e.target.value.trim()
+        
+        console.log(`Input change - ${name}:`, value)
+        
+        setCurrentUser({ 
+            ...currentUser, 
+            [name]: value 
+        })
     }
 
     const validateForm = () => {
-        if (currentUser.username.trim().length === 0) {
+        const username = currentUser.username.trim()
+        const roomId = currentUser.roomId.trim()
+        
+        console.log("Validating form:", { username, roomId })
+        
+        if (!username || username.length === 0) {
             toast.error("Enter your username")
             return false
-        } else if (currentUser.roomId.trim().length === 0) {
+        } else if (!roomId || roomId.length === 0) {
             toast.error("Enter a room id")
             return false
-        } else if (currentUser.roomId.trim().length < 5) {
-            toast.error("ROOM Id must be at least 5 characters long")
+        } else if (roomId.length < 5) {
+            toast.error("Room ID must be at least 5 characters long")
             return false
-        } else if (currentUser.username.trim().length < 3) {
+        } else if (username.length < 3) {
             toast.error("Username must be at least 3 characters long")
             return false
         }
+        
+        console.log("Form validation passed")
         return true
     }
 
@@ -50,10 +63,38 @@ const FormComponent = () => {
         if (status === USER_STATUS.ATTEMPTING_JOIN) return
         if (!validateForm()) return
         
-        console.log("Joining room:", { username: currentUser.username, roomId: currentUser.roomId })
+        // Ensure we have valid values before sending
+        const username = currentUser.username.trim()
+        const roomId = currentUser.roomId.trim()
+        
+        console.log("Joining room:", { username, roomId })
+        console.log("Current user state:", currentUser)
+        
+        // Double-check validation
+        if (!username || !roomId) {
+            toast.error("Username and room ID are required")
+            return
+        }
+        
         toast.loading("Joining room...")
         setStatus(USER_STATUS.ATTEMPTING_JOIN)
-        socket.emit(SocketEvent.JOIN_REQUEST, currentUser)
+        
+        // Send the exact values we validated
+        const joinData = { username, roomId }
+        console.log("Sending JOIN_REQUEST with data:", joinData)
+        console.log("Data type:", typeof joinData)
+        console.log("Data keys:", Object.keys(joinData))
+        console.log("Socket connected:", socket.connected)
+        console.log("Socket ID:", socket.id)
+        
+        if (!socket.connected) {
+            console.error("Socket not connected, attempting to connect...")
+            socket.connect()
+            toast.error("Connection lost, please try again")
+            return
+        }
+        
+        socket.emit(SocketEvent.JOIN_REQUEST, joinData)
     }
 
     // Clear any existing user data when component mounts
@@ -105,12 +146,18 @@ const FormComponent = () => {
             console.log("Socket disconnected")
         }
         
+        const handleError = (error: any) => {
+            console.error("Socket error:", error)
+        }
+        
         socket.on("connect", handleConnect)
         socket.on("disconnect", handleDisconnect)
+        socket.on("connect_error", handleError)
         
         return () => {
             socket.off("connect", handleConnect)
             socket.off("disconnect", handleDisconnect)
+            socket.off("connect_error", handleError)
         }
     }, [socket])
 
@@ -147,6 +194,27 @@ const FormComponent = () => {
                 onClick={createNewRoomId}
             >
                 Generate Unique Room Id
+            </button>
+            
+            {/* Debug button for testing socket connection */}
+            <button
+                type="button"
+                className="mt-4 w-full cursor-pointer select-none text-center text-sm text-gray-500 underline transition-colors hover:text-primary"
+                onClick={() => {
+                    console.log("Testing socket connection...")
+                    console.log("Socket connected:", socket.connected)
+                    console.log("Socket ID:", socket.id)
+                    console.log("Backend URL:", import.meta.env.VITE_BACKEND_URL || "http://localhost:3001")
+                    
+                    if (socket.connected) {
+                        toast.success("Socket is connected!")
+                    } else {
+                        toast.error("Socket is not connected")
+                        socket.connect()
+                    }
+                }}
+            >
+                Test Socket Connection
             </button>
         </div>
     )

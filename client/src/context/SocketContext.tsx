@@ -28,7 +28,10 @@ export const useSocket = (): SocketContextType => {
     return context
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"
+
+console.log("Socket connecting to:", BACKEND_URL)
+console.log("Environment VITE_BACKEND_URL:", import.meta.env.VITE_BACKEND_URL)
 
 const SocketProvider = ({ children }: { children: ReactNode }) => {
     const {
@@ -41,8 +44,10 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
     } = useAppContext()
     
     const socket: Socket = useMemo(
-        () =>
-            io(BACKEND_URL, {
+        () => {
+            console.log("Creating new socket connection to:", BACKEND_URL)
+            
+            const newSocket = io(BACKEND_URL, {
                 reconnectionAttempts: 5,
                 reconnectionDelay: 1000,
                 reconnectionDelayMax: 5000,
@@ -52,8 +57,24 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
                     roomId: localStorage.getItem('currentRoomId'),
                     username: localStorage.getItem('currentUsername')
                 }
-            }),
-        [],
+            })
+            
+            // Add connection event listeners
+            newSocket.on('connect', () => {
+                console.log('✅ Socket connected successfully')
+            })
+            
+            newSocket.on('connect_error', (error) => {
+                console.error('❌ Socket connection error:', error)
+            })
+            
+            newSocket.on('disconnect', (reason) => {
+                console.log('🔌 Socket disconnected:', reason)
+            })
+            
+            return newSocket
+        },
+        [BACKEND_URL],
     )
 
     const SYNC_TOAST_ID = 'syncing-toast'

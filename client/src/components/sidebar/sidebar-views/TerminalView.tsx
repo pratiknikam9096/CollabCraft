@@ -120,3 +120,4 @@ function TerminalView() {
 }
 
 export default TerminalView
+

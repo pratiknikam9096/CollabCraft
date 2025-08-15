@@ -11,7 +11,7 @@ services:
     networks:
       - Code-Sync
     ports:
-      - "3000:3000"
+      - "3001:3001"
 
   client:
     container_name: code-sync-client
