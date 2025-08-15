@@ -60,11 +60,29 @@ function TerminalView() {
                 instance.write("\r\n\x1b[31m[Disconnected]\x1b[0m\r\n")
             }
 
+            // Buffer input and only send to backend on Enter
+            let inputBuffer = "";
             instance.onData((data: string) => {
-                if (ws.readyState === ws.OPEN) {
-                    ws.send(data)
+                for (let i = 0; i < data.length; i++) {
+                    const char = data[i];
+                    if (char === "\r" || char === "\n") {
+                        // Send the full command to backend
+                        if (ws.readyState === ws.OPEN && inputBuffer.trim() !== "") {
+                            ws.send(inputBuffer);
+                        }
+                        inputBuffer = "";
+                        instance.write("\r\n");
+                    } else if (char === "\u007f") { // Handle backspace
+                        if (inputBuffer.length > 0) {
+                            inputBuffer = inputBuffer.slice(0, -1);
+                            instance.write("\b \b");
+                        }
+                    } else {
+                        inputBuffer += char;
+                        instance.write(char);
+                    }
                 }
-            })
+            });
 
             const handleResize = () => {
                 try {

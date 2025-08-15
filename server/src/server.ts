@@ -75,60 +75,72 @@ wss.on("connection", (ws: WebSocket, req: any) => {
 
 		ws.on("message", (msg: any) => {
 			try {
-				const command = msg.toString().trim()
-				
-				if (!command) return
 
-				// Kill any existing process
-				if (currentProcess) {
-					currentProcess.kill()
-					currentProcess = null
-				}
+         let parsed: any = null;
+         try {
+           parsed = JSON.parse(msg.toString());
+         } catch {}
 
-				// Determine shell by platform
-				const platform = os.platform()
-				let shell = "bash"
-				let shellArgs: string[] = []
-				
-				if (platform === "win32") {
-					shell = process.env.ComSpec || "cmd.exe"
-					shellArgs = ["/c", command]
-				} else {
-					shellArgs = ["-c", command]
-				}
+         // Ignore JSON messages with type 'resize' (from frontend)
+         if (parsed && parsed.type === "resize") {
+           // Optionally: handle pty resizing here if using a real pty backend
+           return;
+         }
 
-				// Spawn new process
-				currentProcess = spawn(shell, shellArgs, {
-					cwd,
-					env: process.env as Record<string, string>,
-				})
+         const command = msg.toString().trim();
+         // Ignore empty commands or JSON messages
+         if (!command || (command.startsWith('{') && command.endsWith('}'))) return;
 
-				// Stream output
-				currentProcess.stdout?.on("data", (data) => {
-					if (ws.readyState === ws.OPEN) {
-						ws.send(data.toString())
-					}
-				})
+         // Kill any existing process
+         if (currentProcess) {
+           currentProcess.kill();
+           currentProcess = null;
+         }
 
-				currentProcess.stderr?.on("data", (data) => {
-					if (ws.readyState === ws.OPEN) {
-						ws.send(`\x1b[31m${data.toString()}\x1b[0m`)
-					}
-				})
+         // Determine shell by platform
+         const platform = os.platform();
+         let shell = "bash";
+         let shellArgs: string[] = [];
 
-				currentProcess.on("close", (code) => {
-					if (ws.readyState === ws.OPEN) {
-						ws.send(`\r\n\x1b[33m[Process exited with code ${code}]\x1b[0m\r\n`)
-					}
-					currentProcess = null
-				})
+         if (platform === "win32") {
+           shell = process.env.ComSpec || "cmd.exe";
+           shellArgs = ["/c", command];
+         } else {
+           shellArgs = ["-c", command];
+         }
 
-				currentProcess.on("error", (error) => {
-					if (ws.readyState === ws.OPEN) {
-						ws.send(`\r\n\x1b[31m[Error: ${error.message}]\x1b[0m\r\n`)
-					}
-					currentProcess = null
-				})
+         // Spawn new process
+         currentProcess = spawn(shell, shellArgs, {
+           cwd,
+           env: process.env as Record<string, string>,
+         });
+
+         // Stream output
+         currentProcess.stdout?.on("data", (data) => {
+           if (ws.readyState === ws.OPEN) {
+             ws.send(data.toString());
+           }
+         });
+
+         currentProcess.stderr?.on("data", (data) => {
+           if (ws.readyState === ws.OPEN) {
+             ws.send(`\x1b[31m${data.toString()}\x1b[0m`);
+           }
+         });
+
+         currentProcess.on("close", (code) => {
+           if (ws.readyState === ws.OPEN) {
+             ws.send(`\r\n\x1b[33m[Process exited with code ${code}]\x1b[0m\r\n`);
+           }
+           currentProcess = null;
+         });
+
+         currentProcess.on("error", (error) => {
+           if (ws.readyState === ws.OPEN) {
+             ws.send(`\r\n\x1b[31m[Error: ${error.message}]\x1b[0m\r\n`);
+           }
+           currentProcess = null;
+         });
 
 			} catch (e) {
 				console.error("Terminal command error:", e)
