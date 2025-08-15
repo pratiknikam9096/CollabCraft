@@ -2,7 +2,7 @@ import { useAppContext } from "@/context/AppContext"
 import { useSocket } from "@/context/SocketContext"
 import { SocketEvent } from "@/types/socket"
 import { USER_STATUS } from "@/types/user"
-import { ChangeEvent, FormEvent, useEffect, useRef } from "react"
+import { ChangeEvent, FormEvent, useEffect, useRef, useCallback } from "react"
 import { toast } from "react-hot-toast"
 import { useLocation, useNavigate } from "react-router-dom"
 import { v4 as uuidv4 } from "uuid"
@@ -15,26 +15,35 @@ const FormComponent = () => {
 
     const usernameRef = useRef<HTMLInputElement | null>(null)
     const navigate = useNavigate()
+    
+    // Debug render counter
+    const renderCount = useRef(0)
+    renderCount.current += 1
 
-    const createNewRoomId = () => {
+    const createNewRoomId = useCallback(() => {
         setCurrentUser({ ...currentUser, roomId: uuidv4() })
         toast.success("Created a new Room Id")
         usernameRef.current?.focus()
-    }
+    }, [currentUser, setCurrentUser])
 
-    const handleInputChanges = (e: ChangeEvent<HTMLInputElement>) => {
+    const handleInputChanges = useCallback((e: ChangeEvent<HTMLInputElement>) => {
         const name = e.target.name
-        const value = e.target.value.trim()
+        const value = e.target.value
         
         console.log(`Input change - ${name}:`, value)
+        console.log(`Event type:`, e.type)
+        console.log(`Target value:`, e.target.value)
+        console.log(`Current user before update:`, currentUser)
         
         setCurrentUser({ 
             ...currentUser, 
             [name]: value 
         })
-    }
+        
+        console.log(`Set currentUser called with:`, { ...currentUser, [name]: value })
+    }, [currentUser, setCurrentUser])
 
-    const validateForm = () => {
+    const validateForm = useCallback(() => {
         const username = currentUser.username.trim()
         const roomId = currentUser.roomId.trim()
         
@@ -56,9 +65,9 @@ const FormComponent = () => {
         
         console.log("Form validation passed")
         return true
-    }
+    }, [currentUser.username, currentUser.roomId])
 
-    const joinRoom = (e: FormEvent<HTMLFormElement>) => {
+    const joinRoom = useCallback((e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         if (status === USER_STATUS.ATTEMPTING_JOIN) return
         if (!validateForm()) return
@@ -95,7 +104,7 @@ const FormComponent = () => {
         }
         
         socket.emit(SocketEvent.JOIN_REQUEST, joinData)
-    }
+    }, [status, validateForm, currentUser, setStatus, socket])
 
     // Clear any existing user data when component mounts
     useEffect(() => {
@@ -168,6 +177,8 @@ const FormComponent = () => {
                     type="text"
                     name="roomId"
                     placeholder="Room Id"
+                    autoComplete="off"
+                    spellCheck="false"
                     className="w-full rounded-lg border border-gray-600 bg-darkHover/80 px-4 py-4 text-white placeholder-gray-400 backdrop-blur-sm transition-all duration-200 focus:border-primary focus:bg-darkHover focus:outline-none focus:ring-2 focus:ring-primary/20"
                     onChange={handleInputChanges}
                     value={currentUser.roomId}
@@ -176,11 +187,20 @@ const FormComponent = () => {
                     type="text"
                     name="username"
                     placeholder="Username"
-                    className="w-full rounded-lg border border-gray-600 bg-darkHover/80 px-4 py-4 text-white placeholder-gray-400 backdrop-blur-sm transition-all duration-200 focus:border-primary focus:bg-darkHover focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    autoComplete="off"
+                    spellCheck="false"
+                    className="w-full rounded-lg border border-gray-600 bg-darkHover/80 px-4 py-4 text-white placeholder-gray-400 backdrop-blur-sm transition-all duration-200 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     onChange={handleInputChanges}
                     value={currentUser.username}
                     ref={usernameRef}
                 />
+                
+                {/* Debug info - remove this in production */}
+                <div className="text-xs text-gray-500 bg-gray-800/50 p-2 rounded">
+                    <div>Debug - Username: "{currentUser.username}" (length: {currentUser.username.length})</div>
+                    <div>Debug - Room ID: "{currentUser.roomId}" (length: {currentUser.roomId.length})</div>
+                    <div>Debug - Render count: {renderCount.current}</div>
+                </div>
                 <button
                     type="submit"
                     className="mt-4 w-full rounded-lg bg-gradient-to-r from-primary to-green-400 px-8 py-4 text-lg font-bold text-black transition-all duration-200 hover:from-green-400 hover:to-primary hover:shadow-lg hover:shadow-primary/25 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -215,6 +235,19 @@ const FormComponent = () => {
                 }}
             >
                 Test Socket Connection
+            </button>
+            
+            {/* Test button for input state updates */}
+            <button
+                type="button"
+                className="mt-2 w-full cursor-pointer select-none text-center text-sm text-blue-500 underline transition-colors hover:text-blue-400"
+                onClick={() => {
+                    console.log("Testing input state updates...")
+                    setCurrentUser({ username: "testuser", roomId: "testroom123" })
+                    toast.success("Set test values - check if inputs update!")
+                }}
+            >
+                Test Input State Updates
             </button>
         </div>
     )

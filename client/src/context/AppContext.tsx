@@ -58,15 +58,19 @@ function AppContextProvider({ children }: { children: ReactNode }) {
     )
     const [drawingData, setDrawingData] = useState<DrawingData>(null)
 
-    // Persist user state to localStorage
+    // Persist user state to localStorage with debouncing
     useEffect(() => {
-        if (currentUser.username && currentUser.roomId) {
-            console.log("Persisting user to localStorage:", currentUser)
-            localStorage.setItem("collabcraft_user", JSON.stringify(currentUser))
-        } else {
-            console.log("Clearing user from localStorage")
-            localStorage.removeItem("collabcraft_user")
-        }
+        const timeoutId = setTimeout(() => {
+            if (currentUser.username && currentUser.roomId) {
+                console.log("Persisting user to localStorage:", currentUser)
+                localStorage.setItem("collabcraft_user", JSON.stringify(currentUser))
+            } else {
+                console.log("Clearing user from localStorage")
+                localStorage.removeItem("collabcraft_user")
+            }
+        }, 500) // Wait 500ms after user stops typing
+        
+        return () => clearTimeout(timeoutId)
     }, [currentUser])
 
     // Persist status to localStorage
