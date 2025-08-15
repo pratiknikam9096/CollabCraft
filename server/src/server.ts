@@ -1,4 +1,5 @@
 import express, { Response, Request } from "express"
+import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
 import http from "http"
 import cors from "cors"
@@ -14,6 +15,21 @@ dotenv.config()
 
 const app = express()
 app.use(express.json())
+app.use(cookieParser(process.env.COOKIE_SECRET || "collabcraft-secret"))
+
+// Set session cookie in HTTP middleware before Socket.IO handshake
+app.post("/api/session", (req, res) => {
+  const { sessionId } = req.body
+  if (!sessionId) return res.status(400).json({ error: "Missing sessionId" })
+  res.cookie("collabcraft_sid", sessionId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    path: "/"
+  })
+  res.json({ ok: true })
+})
 app.use(cors({
   origin: [
     'https://collabcraft-cbqu.onrender.com', 
@@ -253,8 +269,24 @@ function endVideoCall(roomId: string) {
   activeVideoCalls.delete(roomId)
 }
 
+import { v4 as uuidv4 } from "uuid"
+
+// Helper to get session ID from cookie header
+function getSessionIdFromHandshake(socket: any): string | null {
+  const cookieHeader = socket.handshake.headers.cookie
+  if (!cookieHeader) return null
+  const match = cookieHeader.match(/collabcraft_sid=([^;]+)/)
+  return match ? match[1] : null
+}
+
 // Socket.IO event handlers
 io.on("connection", (socket) => {
+  // Try to get session ID from cookie
+  let sessionId = getSessionIdFromHandshake(socket)
+  if (!sessionId) {
+    // Fallback: try from auth (for legacy clients)
+    sessionId = socket.handshake.auth?.sessionId
+  }
   console.log(`New client connected: ${socket.id}`)
   
   // Handle user actions
@@ -264,7 +296,25 @@ io.on("connection", (socket) => {
     console.log(`Data keys:`, Object.keys(data || {}))
     
     // Destructure with fallbacks and validation
-    const { roomId, username } = data || {}
+    let { roomId, username } = data || {}
+
+    // If sessionId exists, try to restore user
+    if (sessionId) {
+      const existingUser = userSocketMap.find(u => u.sessionId === sessionId)
+      if (existingUser) {
+        // Restore user state
+        username = existingUser.username
+        roomId = existingUser.roomId
+        // Update socketId
+        existingUser.socketId = socket.id
+        existingUser.status = USER_CONNECTION_STATUS.ONLINE
+        existingUser.lastSeen = Date.now()
+        socket.join(roomId)
+        const users = getUsersInRoom(roomId)
+        io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user: existingUser, users })
+        return
+      }
+    }
     
     console.log(`Extracted values - roomId: "${roomId}" (type: ${typeof roomId}), username: "${username}" (type: ${typeof username})`)
     
@@ -310,6 +360,8 @@ io.on("connection", (socket) => {
       return
     }
 
+    // Generate a new sessionId for new users
+    const newSessionId = uuidv4()
     const user: User = {
       username,
       roomId,
@@ -319,8 +371,11 @@ io.on("connection", (socket) => {
       socketId: socket.id,
       currentFile: null,
       lastSeen: Date.now(),
+      sessionId: newSessionId,
     }
     userSocketMap.push(user)
+    // Tell client to set cookie via HTTP endpoint
+    io.to(socket.id).emit("set-session-cookie", { sessionId: newSessionId })
     socket.join(roomId)
     socket.broadcast.to(roomId).emit(SocketEvent.USER_JOINED, { user })
     const users = getUsersInRoom(roomId)
@@ -328,7 +383,7 @@ io.on("connection", (socket) => {
     console.log(`Emitting JOIN_ACCEPTED to socket ${socket.id} with user:`, user)
     console.log(`Users in room after join:`, users)
     
-    io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user, users })
+  io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user, users })
     console.log(`User ${username} successfully joined room ${roomId}`)
   })
 
@@ -377,6 +432,20 @@ io.on("connection", (socket) => {
   
   // Handle reconnection attempts
   socket.on("reconnect_attempt", ({ roomId, username }) => {
+    // Try to restore by sessionId
+    if (sessionId) {
+      const existingUser = userSocketMap.find(u => u.sessionId === sessionId)
+      if (existingUser) {
+        existingUser.socketId = socket.id
+        existingUser.status = USER_CONNECTION_STATUS.ONLINE
+        existingUser.lastSeen = Date.now()
+        socket.join(existingUser.roomId)
+        socket.broadcast.to(existingUser.roomId).emit(SocketEvent.USER_ONLINE, { socketId: socket.id })
+        const users = getUsersInRoom(existingUser.roomId)
+        io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user: existingUser, users })
+        return
+      }
+    }
     console.log(`Reconnection attempt from ${username} for room ${roomId}`)
     
     // Find existing offline user
@@ -384,7 +453,7 @@ io.on("connection", (socket) => {
       (u) => u.username === username && u.roomId === roomId && u.status === USER_CONNECTION_STATUS.OFFLINE
     )
     
-    if (existingUser) {
+  if (existingUser) {
       console.log(`Restoring offline user ${username} in room ${roomId}`)
       
       // Update the existing user with new socket ID and mark as online
@@ -394,16 +463,16 @@ io.on("connection", (socket) => {
           : u
       )
       
-      socket.join(roomId)
+  socket.join(roomId)
       
-      // Notify other users that this user is back online
-      socket.broadcast.to(roomId).emit(SocketEvent.USER_ONLINE, { socketId: socket.id })
+  // Notify other users that this user is back online
+  socket.broadcast.to(roomId).emit(SocketEvent.USER_ONLINE, { socketId: socket.id })
       
-      // Send current room state to reconnected user
-      const users = getUsersInRoom(roomId)
-      io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user: existingUser, users })
+  // Send current room state to reconnected user
+  const users = getUsersInRoom(roomId)
+  io.to(socket.id).emit(SocketEvent.JOIN_ACCEPTED, { user: existingUser, users })
       
-      console.log(`User ${username} successfully reconnected to room ${roomId}`)
+  console.log(`User ${username} successfully reconnected to room ${roomId}`)
     } else {
       console.log(`No offline user ${username} found in room ${roomId}`)
     }
