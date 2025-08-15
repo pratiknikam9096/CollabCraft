@@ -17,19 +17,22 @@ const FormComponent = () => {
 
   /** Create Unique Room ID */
   const createNewRoomId = useCallback(() => {
-    setCurrentUser(prev => ({ ...prev, roomId: uuidv4() }));
+    setCurrentUser({
+      ...currentUser,
+      roomId: uuidv4()
+    });
     toast.success("Created a new Room Id");
     usernameRef.current?.focus();
-  }, [setCurrentUser]);
+  }, [currentUser, setCurrentUser]);
 
   /** Handle Input Changes */
   const handleInputChanges = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setCurrentUser(prev => ({
-      ...prev,
+    setCurrentUser({
+      ...currentUser,
       [name]: value
-    }));
-  }, [setCurrentUser]);
+    });
+  }, [currentUser, setCurrentUser]);
 
   /** Validate form before join */
   const validateForm = useCallback(() => {
@@ -61,10 +64,8 @@ const FormComponent = () => {
     if (status === USER_STATUS.ATTEMPTING_JOIN) return;
     if (!validateForm()) return;
 
-    const { username, roomId } = {
-      username: currentUser.username.trim(),
-      roomId: currentUser.roomId.trim()
-    };
+    const username = currentUser.username.trim();
+    const roomId = currentUser.roomId.trim();
 
     if (!socket.connected) {
       socket.connect();
@@ -75,7 +76,7 @@ const FormComponent = () => {
     toast.loading("Joining room...");
     setStatus(USER_STATUS.ATTEMPTING_JOIN);
     socket.emit(SocketEvent.JOIN_REQUEST, { username, roomId });
-  }, [status, validateForm, currentUser, setStatus, socket]);
+  }, [status, validateForm, currentUser.username, currentUser.roomId, setStatus, socket]);
 
   /** Clear old data when component mounts */
   useEffect(() => {
@@ -85,12 +86,15 @@ const FormComponent = () => {
   /** Pre-fill roomId from navigation state if provided */
   useEffect(() => {
     if (!currentUser.roomId && location.state?.roomId) {
-      setCurrentUser(prev => ({ ...prev, roomId: location.state.roomId }));
+      setCurrentUser({
+        ...currentUser,
+        roomId: location.state.roomId
+      });
       if (!currentUser.username) {
         toast.success("Enter your username");
       }
     }
-  }, [location.state?.roomId, currentUser.username, currentUser.roomId, setCurrentUser]);
+  }, [location.state?.roomId, currentUser, setCurrentUser]);
 
   /** Navigate after joining */
   useEffect(() => {
