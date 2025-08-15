@@ -15,6 +15,25 @@ const FormComponent = () => {
   const usernameRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
 
+  /** Run once on mount to clear stale data */
+  useEffect(() => {
+    clearUserData();
+  }, []); // empty dependency = runs only once
+
+  /** Prefill Room ID from location state, without overwriting user typing later */
+  useEffect(() => {
+    if (location.state?.roomId) {
+      setCurrentUser({
+        ...currentUser,
+        roomId: location.state.roomId
+      });
+      if (!currentUser.username) {
+        toast.success("Enter your username");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.roomId]); // only run if navigation passed a roomId
+
   /** Create Unique Room ID */
   const createNewRoomId = useCallback(() => {
     setCurrentUser({
@@ -77,25 +96,6 @@ const FormComponent = () => {
     setStatus(USER_STATUS.ATTEMPTING_JOIN);
     socket.emit(SocketEvent.JOIN_REQUEST, { username, roomId });
   }, [status, validateForm, currentUser.username, currentUser.roomId, setStatus, socket]);
-
-  /** Clear old data when component mounts */
-  useEffect(() => {
-    clearUserData();
-  }, [clearUserData]);
-
-  /** Prefill roomId from navigation state IF provided (run only once when location changes) */
-  useEffect(() => {
-    if (location.state?.roomId) {
-      setCurrentUser({
-        ...currentUser,
-        roomId: location.state.roomId
-      });
-      if (!currentUser.username) {
-        toast.success("Enter your username");
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state?.roomId]); // no currentUser in deps to avoid overwriting typing
 
   /** Navigate after joining */
   useEffect(() => {
