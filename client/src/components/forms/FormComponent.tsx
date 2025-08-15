@@ -83,9 +83,9 @@ const FormComponent = () => {
     clearUserData();
   }, [clearUserData]);
 
-  /** Pre-fill roomId from navigation state if provided */
+  /** Prefill roomId from navigation state IF provided (run only once when location changes) */
   useEffect(() => {
-    if (!currentUser.roomId && location.state?.roomId) {
+    if (location.state?.roomId) {
       setCurrentUser({
         ...currentUser,
         roomId: location.state.roomId
@@ -94,7 +94,8 @@ const FormComponent = () => {
         toast.success("Enter your username");
       }
     }
-  }, [location.state?.roomId, currentUser, setCurrentUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.roomId]); // no currentUser in deps to avoid overwriting typing
 
   /** Navigate after joining */
   useEffect(() => {
