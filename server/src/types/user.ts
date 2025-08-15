@@ -11,6 +11,7 @@ interface User {
 	typing: boolean
 	currentFile: string | null
 	socketId: string
+	sessionId: string | null
 	lastSeen?: number // Timestamp when user was last seen
 }
 

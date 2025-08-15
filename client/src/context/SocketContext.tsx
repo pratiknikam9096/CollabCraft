@@ -217,6 +217,21 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
         socket.on("syncing-complete", handleSyncingComplete)
         socket.on("video-call-status", handleVideoCallStatus)
 
+        // Listen for session cookie event from backend
+        socket.on("set-session-cookie", async ({ sessionId }) => {
+            try {
+                await fetch(`${BACKEND_URL}/api/session`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ sessionId }),
+                });
+                // Optionally, reload or re-emit join if needed
+            } catch (err) {
+                console.error("Failed to set session cookie", err);
+            }
+        });
+
         return () => {
             socket.off("connect_error")
             socket.off("connect_failed")
@@ -230,6 +245,7 @@ const SocketProvider = ({ children }: { children: ReactNode }) => {
             socket.off(SocketEvent.SYNC_DRAWING)
             socket.off("syncing-complete")
             socket.off("video-call-status")
+            socket.off("set-session-cookie");
         }
     }, [
         handleDrawingSync,

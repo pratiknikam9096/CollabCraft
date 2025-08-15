@@ -13,15 +13,18 @@
 	"license": "ISC",
 	"dependencies": {
 		"cookie": "^0.6.0",
+		"cookie-parser": "^1.4.7",
 		"cors": "^2.8.5",
 		"dotenv": "^16.6.1",
 		"express": "^4.21.2",
 		"http": "^0.0.1-security",
 		"path": "^0.12.7",
 		"socket.io": "^4.8.1",
+		"uuid": "^11.1.0",
 		"ws": "^8.18.3"
 	},
 	"devDependencies": {
+		"@types/cookie-parser": "^1.4.9",
 		"@types/dotenv": "^8.2.0",
 		"@types/express": "^4.17.21",
 		"@types/node": "^18.15.11",
