@@ -1,4 +1,5 @@
 start.bat
+node modules
 TODO.md
 .env
 INTERVIEW_NOTES.md
