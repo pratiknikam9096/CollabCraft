@@ -1,2 +1,0 @@
-// Add this to your dependencies if not present
-// npm install cookie-parser
