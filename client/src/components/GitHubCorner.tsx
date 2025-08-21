@@ -13,8 +13,6 @@ function GitHubCorner() {
                     viewName={VIEWS.RUN}
                     icon={viewIcons[VIEWS.RUN]}
                 />
-            
-            
         </div>
     )
 }

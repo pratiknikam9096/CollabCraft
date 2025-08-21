@@ -1,5 +1,4 @@
 import express, { Response, Request } from "express"
-import cookieParser from "cookie-parser"
 import dotenv from "dotenv"
 import http from "http"
 import cors from "cors"
@@ -10,12 +9,12 @@ import path from "path"
 import os from "os"
 import { WebSocketServer, WebSocket } from "ws"
 import { spawn, ChildProcess } from "child_process"
-
+import { v4 as uuidv4 } from "uuid"
 dotenv.config()
 
 const app = express()
 app.use(express.json())
-app.use(cookieParser(process.env.COOKIE_SECRET || "collabcraft-secret"))
+
 
 // Set session cookie in HTTP middleware before Socket.IO handshake
 app.post("/api/session", (req, res) => {
@@ -45,7 +44,7 @@ const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
     origin: [
-      'https://collabcraft-cbqu.onrender.com', 
+     'https://collabcraft-cbqu.onrender.com', 
       'http://localhost:5173'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
@@ -269,7 +268,6 @@ function endVideoCall(roomId: string) {
   activeVideoCalls.delete(roomId)
 }
 
-import { v4 as uuidv4 } from "uuid"
 
 // Helper to get session ID from cookie header
 function getSessionIdFromHandshake(socket: any): string | null {

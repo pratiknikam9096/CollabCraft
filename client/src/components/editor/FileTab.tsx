@@ -37,7 +37,7 @@ function FileTab() {
     const handleRunCode = (e: React.MouseEvent, fileId: string) => {
         e.stopPropagation()
         if (fileId === activeFile?.id) {
-            runCode()
+            runCode
         } else {
             // Switch to the file first, then run
             const file = openFiles.find((file) => file.id === fileId)
