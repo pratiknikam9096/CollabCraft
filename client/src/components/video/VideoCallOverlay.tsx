@@ -19,7 +19,8 @@ function VideoCallOverlay({ onClose }: VideoCallOverlayProps) {
         toggleScreenShare,
         leaveVideoCall,
         endVideoCall,
-        participants
+        participants,
+        localStream
     } = useVideoCall()
     
 
@@ -193,15 +194,15 @@ function VideoCallOverlay({ onClose }: VideoCallOverlayProps) {
 
                 {/* Video Preview */}
                 <div className="relative bg-gray-700" style={{ width: "100%", height: baseVideoHeight }}>
-                    {participants.find(p => p.isLocal)?.stream ? (
+                    {localStream ? (
                         <video
                             autoPlay
                             playsInline
                             muted
                             className="w-full h-full object-cover"
                             ref={(el) => {
-                                if (el && participants.find(p => p.isLocal)?.stream) {
-                                    el.srcObject = participants.find(p => p.isLocal)!.stream!
+                                if (el && localStream) {
+                                    el.srcObject = localStream;
                                 }
                             }}
                         />

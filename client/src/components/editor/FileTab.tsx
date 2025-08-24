@@ -34,20 +34,20 @@ function FileTab() {
         }
     }
 
-    const handleRunCode = (e: React.MouseEvent, fileId: string) => {
-        e.stopPropagation()
-        if (fileId === activeFile?.id) {
-            runCode
-        } else {
-            // Switch to the file first, then run
-            const file = openFiles.find((file) => file.id === fileId)
-            if (file) {
-                setActiveFile(file)
-                // Small delay to ensure file is set before running
-                setTimeout(() => runCode(), 100)
-            }
-        }
-    }
+    // const handleRunCode = (e: React.MouseEvent, fileId: string) => {
+    //     e.stopPropagation()
+    //     if (fileId === activeFile?.id) {
+    //         runCode
+    //     } else {
+    //         // Switch to the file first, then run
+    //         const file = openFiles.find((file) => file.id === fileId)
+    //         if (file) {
+    //             setActiveFile(file)
+    //             // Small delay to ensure file is set before running
+    //             setTimeout(() => runCode(), 100)
+    //         }
+    //     }
+    // }
 
     useEffect(() => {
         const fileTabNode = fileTabRef.current
@@ -114,7 +114,7 @@ function FileTab() {
                         className="ml-2 mr-2 inline rounded-md hover:bg-darkHover p-1 transition-colors"
                         size={16}
                         title="Run Code"
-                        onClick={(e) => handleRunCode(e, file.id)}
+                        onClick={runCode}
                         style={{
                             opacity: isRunning && file.id === activeFile?.id ? 0.5 : 1,
                             cursor: isRunning && file.id === activeFile?.id ? 'not-allowed' : 'pointer'

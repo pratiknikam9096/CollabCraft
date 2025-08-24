@@ -584,12 +584,53 @@ function VideoSpotlight({ participants, spotlightId, onSpotlight }: {
 function VideoFrame({ participant, className, onSpotlight, isMainView }: VideoFrameProps) {
     const videoRef = useRef<HTMLVideoElement>(null)
     const [showControls, setShowControls] = useState(false)
+    const [hasVideo, setHasVideo] = useState(false)
 
     useEffect(() => {
         if (videoRef.current && participant.stream) {
-            videoRef.current.srcObject = participant.stream
+            console.log(`Setting video source for ${participant.username} (${participant.socketId}):`, 
+                participant.stream.getTracks().length, 'tracks');
+            
+            // Check if the stream has video tracks
+            const videoTracks = participant.stream.getVideoTracks();
+            setHasVideo(videoTracks.length > 0 && videoTracks.some((track: MediaStreamTrack) => track.enabled));
+            
+            videoRef.current.srcObject = participant.stream;
+            
+            // Add event listeners to track video state changes
+            const handleTrackEnded = () => {
+                console.log(`Video track ended for ${participant.username}`);
+                setHasVideo(false);
+            };
+            
+            const handleTrackMute = () => {
+                console.log(`Video track muted for ${participant.username}`);
+                setHasVideo(false);
+            };
+            
+            const handleTrackUnmute = () => {
+                console.log(`Video track unmuted for ${participant.username}`);
+                setHasVideo(true);
+            };
+            
+            videoTracks.forEach((track: MediaStreamTrack) => {
+                track.addEventListener('ended', handleTrackEnded);
+                track.addEventListener('mute', handleTrackMute);
+                track.addEventListener('unmute', handleTrackUnmute);
+            });
+            
+            return () => {
+                videoTracks.forEach((track: MediaStreamTrack) => {
+                    track.removeEventListener('ended', handleTrackEnded);
+                    track.removeEventListener('mute', handleTrackMute);
+                    track.removeEventListener('unmute', handleTrackUnmute);
+                });
+            };
+        } else if (videoRef.current) {
+            videoRef.current.srcObject = null;
+            setHasVideo(false);
         }
-    }, [participant.stream])
+    }, [participant.stream, participant.username, participant.socketId])
 
     const handleSpotlight = () => {
         if (onSpotlight) {
@@ -621,13 +662,15 @@ function VideoFrame({ participant, className, onSpotlight, isMainView }: VideoFr
             onMouseLeave={() => setShowControls(false)}
         >
             {/* Video Element */}
-            {participant.stream ? (
+            {participant.stream && hasVideo ? (
                 <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted={participant.isLocal}
                     className="w-full h-full object-cover"
+                    onLoadedMetadata={() => console.log(`Video loaded for ${participant.username}`)}
+                    onError={(e) => console.error(`Video error for ${participant.username}:`, e)}
                 />
             ) : (
                 <div className="w-full h-full bg-gray-800 flex items-center justify-center">
@@ -635,7 +678,7 @@ function VideoFrame({ participant, className, onSpotlight, isMainView }: VideoFr
                         <BsCameraVideoOff className="mx-auto mb-2 text-gray-400" size={isMainView ? 64 : 32} />
                         <p className="text-white font-semibold">{participant.username}</p>
                         <p className="text-gray-400 text-sm">
-                            {participant.isLocal ? 'Camera off' : 'Connecting...'}
+                            {participant.isLocal ? 'Camera off' : hasVideo ? 'Connecting...' : 'No video'}
                         </p>
                     </div>
                 </div>
