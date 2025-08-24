@@ -126,34 +126,63 @@ const VideoCallContextProvider = ({ children }: Props) => {
   const createPeerConnection = useCallback((socketId: string) => {
     const peerConnection = new RTCPeerConnection(rtcConfig);
     
+    console.log(`Creating peer connection for ${socketId}`);
+    
     // Add local stream tracks
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStreamRef.current!);
+      const tracks = localStreamRef.current.getTracks();
+      console.log(`Adding ${tracks.length} local tracks to peer connection for ${socketId}`);
+      tracks.forEach(track => {
+        try {
+          peerConnection.addTrack(track, localStreamRef.current!);
+          console.log(`Added ${track.kind} track to peer connection for ${socketId}`);
+        } catch (error) {
+          console.error(`Failed to add ${track.kind} track to peer connection for ${socketId}:`, error);
+        }
       });
+    } else {
+      console.warn(`No local stream available when creating peer connection for ${socketId}`);
     }
 
     peerConnection.ontrack = (event) => {
+      console.log(`Received remote track for ${socketId}:`, event.streams.length, 'streams');
       const [remoteStream] = event.streams;
-      setRemoteStreams(prev => new Map(prev.set(socketId, remoteStream)));
+      if (remoteStream) {
+        console.log(`Remote stream for ${socketId} has ${remoteStream.getTracks().length} tracks`);
+        remoteStream.getTracks().forEach(track => {
+          console.log(`Remote track ${track.kind} for ${socketId}: enabled=${track.enabled}, readyState=${track.readyState}`);
+        });
+        setRemoteStreams(prev => {
+          const newMap = new Map(prev.set(socketId, remoteStream));
+          console.log(`Updated remote streams map:`, Array.from(newMap.keys()));
+          return newMap;
+        });
+        
+        // Setup voice activity detection for remote stream
+        setupVoiceActivityDetection(remoteStream, socketId);
+      }
     };
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log(`Sending ICE candidate to ${socketId}`);
         socket.emit("video-call-signal", {
           type: "ice-candidate", 
           socketId, 
           data: event.candidate
         });
+      } else {
+        console.log(`ICE gathering complete for ${socketId}`);
       }
     };
 
     peerConnection.oniceconnectionstatechange = () => {
-      console.log(`ICE connection state for ${socketId}:`, peerConnection.iceConnectionState);
+      const state = peerConnection.iceConnectionState;
+      console.log(`ICE connection state for ${socketId}:`, state);
       
       // Update connection quality based on ICE state
       let quality: 'excellent' | 'good' | 'fair' | 'poor' = 'good';
-      switch (peerConnection.iceConnectionState) {
+      switch (state) {
         case 'connected':
         case 'completed':
           quality = 'excellent';
@@ -173,28 +202,34 @@ const VideoCallContextProvider = ({ children }: Props) => {
       connectionStats.current.set(socketId, { 
         ...connectionStats.current.get(socketId),
         quality,
-        iceState: peerConnection.iceConnectionState
+        iceState: state
       });
     };
 
     peerConnection.onconnectionstatechange = () => {
-      console.log(`Connection state for ${socketId}:`, peerConnection.connectionState);
+      const state = peerConnection.connectionState;
+      console.log(`Connection state for ${socketId}:`, state);
       
       // Monitor connection quality
-      if (peerConnection.connectionState === 'connected') {
+      if (state === 'connected') {
+        console.log(`Peer connection established with ${socketId}`);
         // Start monitoring connection stats
         const monitorStats = async () => {
           try {
             const stats = await peerConnection.getStats();
             let totalBitrate = 0;
             let totalPackets = 0;
+            let videoTracks = 0;
             
             stats.forEach(report => {
               if (report.type === 'inbound-rtp' && report.mediaType === 'video') {
                 totalBitrate += report.bytesReceived || 0;
                 totalPackets += report.packetsReceived || 0;
+                videoTracks++;
               }
             });
+            
+            console.log(`Connection stats for ${socketId}: ${videoTracks} video tracks, ${totalBitrate} bytes, ${totalPackets} packets`);
             
             connectionStats.current.set(socketId, {
               ...connectionStats.current.get(socketId),
@@ -215,12 +250,14 @@ const VideoCallContextProvider = ({ children }: Props) => {
           ...connectionStats.current.get(socketId),
           monitorInterval: interval
         });
+      } else if (state === 'failed' || state === 'disconnected') {
+        console.error(`Peer connection with ${socketId} failed or disconnected`);
       }
     };
 
     peerConnections.current.set(socketId, peerConnection);
     return peerConnection;
-  }, [socket]);
+  }, [socket, setupVoiceActivityDetection]);
 
   const startTeamVideoCall = useCallback(async () => {
     try {

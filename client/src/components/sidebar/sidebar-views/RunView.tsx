@@ -41,7 +41,7 @@
                             className={`px-3 py-1 rounded transition-colors ${
                                 activeTab === "run" ? "bg-primary text-black" : "hover:bg-gray-600"
                             }`}
-                            onClick={() => setActiveTab("run")}
+                            onClick={runCode}
                         >
                             Run Code
                         </button>
