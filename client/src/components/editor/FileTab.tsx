@@ -123,7 +123,7 @@ function FileTab() {
                     <IoClose
                         className="ml-1 inline rounded-md hover:bg-darkHover p-1"
                         size={16}
-                        onClick={() => closeFile(file.id)}
+                        onClick={runCode}
                     />
                 </span>
             ))}
