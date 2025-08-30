@@ -11,7 +11,7 @@ function GitHubCorner() {
   return (
     <div className="fixed right-0 top-0 z-10 flex items-start gap-2">
       {/* GitHub Corner */}
-      <SidebarButton viewName={VIEWS.RUN} icon={viewIcons[VIEWS.RUN]} />
+      {/* //<SidebarButton viewName={VIEWS.RUN} icon={viewIcons[VIEWS.RUN]}  /> */}
       <button onClick={runCtx.runCode}>Run</button>
       {/* or: <button onClick={() => runCtx.run()}>Run</button> */}
     </div>
