@@ -14,10 +14,10 @@ function Users() {
             <div className="flex justify-center gap-4">
                 {!isVideoCallActive ? (
                     <>
-                        <button className="video-call-btn" onClick={() => startTeamVideoCall()}>
+                        <button type="button" className="video-call-btn" onClick={() => startTeamVideoCall()}>
                             📞 Start Group Video Call
                         </button>
-                        <button className="video-call-btn" onClick={joinTeamVideoCall}>
+                        <button type="button" className="video-call-btn" onClick={joinTeamVideoCall}>
                             ➕ Join Video Call
                         </button>
                     </>
@@ -35,15 +35,16 @@ function Users() {
                 </div>
             )}
 
-            {/* User Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+            {/* User List - one user per row */}
+            <div className="flex flex-col divide-y">
                 {users.map((user) => (
-                    <UserCard
-                        key={user.socketId}
-                        user={user}
-                        startVideoCall={startTeamVideoCall}
-                        isVideoCallActive={isVideoCallActive}
-                    />
+                    <div key={user.socketId} className="py-3">
+                        <UserCard
+                            user={user}
+                            startVideoCall={startTeamVideoCall}
+                            isVideoCallActive={isVideoCallActive}
+                        />
+                    </div>
                 ))}
             </div>
         </div>
@@ -62,32 +63,35 @@ const UserCard = ({ user, startVideoCall, isVideoCallActive }: UserProps) => {
 
     return (
         <div
-            className="flex flex-col items-center bg-white shadow-md rounded-xl p-4 relative hover:shadow-lg transition"
+            className="flex items-center w-full gap-4 bg-white shadow-sm rounded-xl p-3 hover:shadow-md transition"
             title={`${username} - ${isOnline ? "online" : "offline"}`}
         >
             {/* Avatar */}
-            <div className="relative">
-                <Avatar name={username} size="60" round={"50%"} />
-                <span
-                    className={`absolute bottom-1 right-1 h-3 w-3 rounded-full border-2 border-white ${
-                        isOnline ? "bg-green-500" : "bg-gray-400"
-                    }`}
-                />
+            <div className="flex-shrink-0">
+                <Avatar name={username} size="48" round="50%" />
             </div>
 
-            {/* Username */}
-            <p className="mt-2 text-sm font-medium text-center truncate w-full">
-                {username}
-            </p>
+            {/* Username & status */}
+            <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-900 font-medium truncate" title={username}>
+                    {username}
+                </p>
+                <div className="text-xs text-gray-500 mt-1">
+                    {isOnline ? "Online" : "Offline"}
+                </div>
+            </div>
 
-            {/* Call Button */}
-            {isOnline && !isVideoCallActive && (
-                <button
-                    className="video-call-btn mt-3 w-full text-sm"
-                    onClick={() => startVideoCall()}
-                >
-                    🎥 Call
-                </button>
+            {/* Call Button - only show when no group call is active */}
+            {!isVideoCallActive && isOnline && (
+                <div className="flex-shrink-0">
+                    <button
+                        type="button"
+                        className="video-call-btn text-sm py-1 px-3"
+                        onClick={() => startVideoCall()}
+                    >
+                        🎥 Call
+                    </button>
+                </div>
             )}
         </div>
     );

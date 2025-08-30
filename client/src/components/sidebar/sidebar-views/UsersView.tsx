@@ -45,10 +45,12 @@ function UsersView() {
     }
 
     return (
-        <div className="flex flex-col p-4" style={{ height: viewHeight }}>
+        <div className="flex flex-col p-4 min-h-0" style={{ height: viewHeight }}>
             <h1 className="view-title">Users</h1>
-            {/* List of connected users */}
-            <Users />
+            {/* List of connected users - make scrollable when content overflows */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+                <Users />
+            </div>
             <div className="flex flex-col items-center gap-4 pt-4">
                 <div className="flex w-full gap-4">
                     {/* Share URL button */}

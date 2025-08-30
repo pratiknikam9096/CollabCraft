@@ -650,15 +650,39 @@ io.on("connection", (socket) => {
     switch (data.type) {
       case 'team-video-call-start':
         startVideoCall(roomId, data.username)
+        // Notify other users in the room that a team call has started
+        socket.broadcast.to(roomId).emit('video-call-signal', {
+          ...data,
+          type: 'team-video-call-start',
+          socketId: socket.id
+        })
         break
       case 'team-video-call-join':
         joinVideoCall(roomId, data.username)
+        // Notify other users that someone joined
+        socket.broadcast.to(roomId).emit('video-call-signal', {
+          ...data,
+          type: 'team-video-call-join',
+          socketId: socket.id
+        })
         break
       case 'team-video-call-leave':
         leaveVideoCall(roomId, data.username)
+        // Notify others that someone left
+        socket.broadcast.to(roomId).emit('video-call-signal', {
+          ...data,
+          type: 'team-video-call-leave',
+          socketId: socket.id
+        })
         break
       case 'team-video-call-end':
         endVideoCall(roomId)
+        // Notify others that the call ended
+        socket.broadcast.to(roomId).emit('video-call-signal', {
+          ...data,
+          type: 'team-video-call-end',
+          socketId: socket.id
+        })
         break
       case 'offer':
       case 'answer':
