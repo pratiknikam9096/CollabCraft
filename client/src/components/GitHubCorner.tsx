@@ -1,11 +1,11 @@
-import { VIEWS } from "@/types/view"
-import SidebarButton from "@/components/sidebar/sidebar-views/SidebarButton"
-import { useViews } from "@/context/ViewContext"
+// import { VIEWS } from "@/types/view"
+// import SidebarButton from "@/components/sidebar/sidebar-views/SidebarButton"
+// import { useViews } from "@/context/ViewContext"
 import { useRunCode } from "@/context/RunCodeContext"
 
 
 function GitHubCorner() {
-  const { viewIcons } = useViews()
+//   const { viewIcons } = useViews()
   const runCtx = useRunCode() // returns RunContext object
 
   return (
