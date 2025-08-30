@@ -13,7 +13,7 @@ import langMap from "lang-map"
 function FileTab() {
     const {
         openFiles,
-        closeFile,
+       // closeFile,
         activeFile,
         updateFileContent,
         setActiveFile,
