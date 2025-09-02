@@ -1,6 +1,5 @@
 import SplitterComponent from "@/components/SplitterComponent"
 import ConnectionStatusPage from "@/components/connection/ConnectionStatusPage"
-import GitHubCorner from "@/components/GitHubCorner"
 import WorkSpace from "@/components/workspace"
 import { useAppContext } from "@/context/AppContext"
 import { useSocket } from "@/context/SocketContext"
@@ -74,7 +73,7 @@ function EditorPage() {
 
     return (
         <div className="flex h-screen w-full flex-col bg-dark">
-            <GitHubCorner />
+            
             <SplitterComponent>
                 <Sidebar />
                 <WorkSpace />
