@@ -86,11 +86,11 @@ const FormComponent = () => {
     const username = currentUser.username.trim();
     const roomId = currentUser.roomId.trim();
 
-    if (!socket.connected) {
-      socket.connect();
-      toast.error("Socket not connected. Reconnecting...");
-      return;
-    }
+    // if (!socket.connected) {
+    //   socket.connect();
+    //   toast.error("Socket not connected. Reconnecting...");
+    //   return;
+    // }
 
     toast.loading("Joining room...");
     setStatus(USER_STATUS.ATTEMPTING_JOIN);

@@ -4,10 +4,10 @@ function Footer() {
             <span>
                 Build with ❤️ by{" "}
                 <a
-                    href="https://github.com/sahilatahar"
+                    href="https://github.com/pratiknikam9096"
                     className="text-primary underline underline-offset-1"
                 >
-                    sahilatahar
+                    Pratik Rajendra  Nikam
                 </a>
             </span>
         </footer>
