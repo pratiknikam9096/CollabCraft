@@ -48,22 +48,7 @@ A collaborative, real-time code editor where users can seamlessly code together.
    ```bash
    git clone https://github.com/<your-username>/Code-Sync.git
    ```
-3. **Create .env file:**
-   Inside the client and server directories create `.env` and set:
-
-   Frontend:
-
-   ```bash
-   VITE_BACKEND_URL=<your_server_url>
-   ```
-
-   Backend:
-
-   ```bash
-   PORT=3000
-   ```
-
-4. **Install dependencies:**
+3. **Install dependencies:**
    ```bash
    npm install     # Run in both client and server directories
    ```
