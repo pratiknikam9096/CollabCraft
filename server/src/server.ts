@@ -30,7 +30,7 @@ app.post("/api/session", (req, res) => {
   res.json({ ok: true })
 })
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:5173'],
+  origin: process.env.ALLOWED_ORIGINS ,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }))
@@ -40,7 +40,7 @@ app.use(express.static(path.join(__dirname, "public"), { fallthrough: true }))
 const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:5173'],
+    origin: process.env.ALLOWED_ORIGINS ,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true
   },
