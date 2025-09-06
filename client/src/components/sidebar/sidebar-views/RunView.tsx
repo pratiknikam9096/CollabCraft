@@ -1,6 +1,6 @@
     import { useRunCode } from "@/context/RunCodeContext"
     import useResponsive from "@/hooks/useResponsive"
-    import { ChangeEvent, useState } from "react"
+    import { ChangeEvent, useMemo, useState } from "react"
     import toast from "react-hot-toast"
     import { LuCopy } from "react-icons/lu"
     import { PiCaretDownBold } from "react-icons/pi"
@@ -17,7 +17,8 @@
             setSelectedLanguage,
             runCode,
         } = useRunCode()
-        const [activeTab, setActiveTab] = useState<"run" | "terminal">("run")
+    const [activeTab, setActiveTab] = useState<"run" | "terminal">("run")
+    const headerTitle = useMemo(() => (activeTab === "terminal" ? "Terminal" : "Run"), [activeTab])
 
         const handleLanguageChange = (e: ChangeEvent<HTMLSelectElement>) => {
             const lang = JSON.parse(e.target.value)
@@ -35,24 +36,21 @@
                 style={{ height: viewHeight }}
             >
                 <div className="flex w-full items-center justify-between">
-                    <h1 className="view-title">Run</h1>
-                    <div className="rounded-md bg-darkHover p-1 text-white">
-                        <button
-                            className={`px-3 py-1 rounded transition-colors ${
-                                activeTab === "run" ? "bg-primary text-black" : "hover:bg-gray-600"
-                            }`}
-                            onClick={runCode}
+                    <h1 className="view-title">{headerTitle}</h1>
+                    <div className="relative text-white  min-w-[160px]">
+                        <select
+                            aria-label="Select mode"
+                            className="w-full appearance-none  rounded-md border-none bg-darkHover px-4 py-1 pr-10 text-white outline-none"
+                            value={activeTab}
+                            onChange={(e) => setActiveTab(e.target.value as "run" | "terminal")}
                         >
-                            Run Code
-                        </button>
-                        <button
-                            className={`px-3 py-1 rounded transition-colors ${
-                                activeTab === "terminal" ? "bg-primary text-black" : "hover:bg-gray-600"
-                            }`}
-                            onClick={() => setActiveTab("terminal")}
-                        >
-                            Terminal
-                        </button>
+                            <option value="run">Run Code</option>
+                            <option value="terminal">Terminal</option>
+                        </select>
+                        <PiCaretDownBold
+                            size={16}
+                            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white"
+                        />
                     </div>
                 </div>
                 

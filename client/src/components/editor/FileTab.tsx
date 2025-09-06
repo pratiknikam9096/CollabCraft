@@ -9,6 +9,8 @@ import { useEffect, useRef } from "react"
 import customMapping from "@/utils/customMapping"
 import { useSettings } from "@/context/SettingContext"
 import langMap from "lang-map"
+import { useViews } from "@/context/ViewContext"
+import { VIEWS } from "@/types/view"
 
 function FileTab() {
     const {
@@ -21,6 +23,7 @@ function FileTab() {
     const { runCode, isRunning } = useRunCode()
     const fileTabRef = useRef<HTMLDivElement>(null)
     const { setLanguage } = useSettings()
+    const { setActiveView, setIsSidebarOpen } = useViews()
 
     const changeActiveFile = (fileId: string) => {
         // If the file is already active, do nothing
@@ -34,20 +37,29 @@ function FileTab() {
         }
     }
 
-    // const handleRunCode = (e: React.MouseEvent, fileId: string) => {
-    //     e.stopPropagation()
-    //     if (fileId === activeFile?.id) {
-    //         runCode
-    //     } else {
-    //         // Switch to the file first, then run
-    //         const file = openFiles.find((file) => file.id === fileId)
-    //         if (file) {
-    //             setActiveFile(file)
-    //             // Small delay to ensure file is set before running
-    //             setTimeout(() => runCode(), 100)
-    //         }
-    //     }
-    // }
+    const handleRunCode = (
+        e: React.MouseEvent<SVGElement, MouseEvent>,
+        fileId: string,
+    ) => {
+        e.stopPropagation()
+
+        // Ensure the Run tab is visible
+        setIsSidebarOpen(true)
+        setActiveView(VIEWS.RUN)
+
+        if (fileId === activeFile?.id) {
+            // Run for the current active file immediately
+            runCode()
+        } else {
+            // Switch to the file first, then run once state settles
+            const file = openFiles.find((f) => f.id === fileId)
+            if (file) {
+                setActiveFile(file)
+                // Allow React state to update before running
+                setTimeout(() => runCode(), 50)
+            }
+        }
+    }
 
     useEffect(() => {
         const fileTabNode = fileTabRef.current
@@ -112,9 +124,9 @@ function FileTab() {
                     </p>
                     <IoPlay
                         className="ml-2 mr-2 inline rounded-md hover:bg-darkHover p-1 transition-colors"
-                        size={16}
+                        size={20}
                         title="Run Code"
-                        onClick={runCode}
+                        onClick={(e) => handleRunCode(e, file.id)}
                         style={{
                             opacity: isRunning && file.id === activeFile?.id ? 0.5 : 1,
                             cursor: isRunning && file.id === activeFile?.id ? 'not-allowed' : 'pointer'
@@ -122,7 +134,7 @@ function FileTab() {
                     />
                     <IoClose
                         className="ml-1 inline rounded-md hover:bg-darkHover p-1"
-                        size={16}
+                        size={20}
                         onClick={runCode}
                     />
                 </span>
