@@ -30,7 +30,10 @@ app.post("/api/session", (req, res) => {
   res.json({ ok: true })
 })
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ,
+  origin: [
+      "https://collabcraft-cbqu.onrender.com", // your frontend
+      "http://localhost:5173" // local dev
+    ] ,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   credentials: true
 }))
@@ -40,7 +43,10 @@ app.use(express.static(path.join(__dirname, "public"), { fallthrough: true }))
 const server = http.createServer(app)
 const io = new Server(server, {
   cors: {
-    origin: process.env.ALLOWED_ORIGINS ,
+    origin: [
+      "https://collabcraft-cbqu.onrender.com", // your frontend
+      "http://localhost:5173" // local dev
+    ] ,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     credentials: true
   },
