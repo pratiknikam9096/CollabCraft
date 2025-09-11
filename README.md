@@ -93,10 +93,9 @@ A collaborative, real-time code editor where users can seamlessly code together.
 
    ```bash
    # Run Backend Container (Port 3000)
-   docker run -d -p 3000:3000 --name code-sync-server sahilatahar/code-sync-server:latest
-
+   docker run -d -p 3000:3000 
    # Run Frontend Container (Port 5173)
-   docker run -d -p 5173:5173 --name code-sync-client sahilatahar/code-sync-client:latest
+   docker run -d -p 5173:5173 
    ```
 
 4. **Access the application:**
