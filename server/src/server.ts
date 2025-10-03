@@ -11,52 +11,11 @@ import os from "os"
 import { WebSocketServer, WebSocket } from "ws"
 import { spawn, ChildProcess } from "child_process"
 import { v4 as uuidv4 } from "uuid"
-import jwt from "jsonwebtoken"
-import bcrypt from "bcryptjs"
 dotenv.config()
 
 const app = express()
 app.use(express.json())
 app.use(cookieParser())
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
-
-// Room authentication endpoint
-app.post("/api/auth-room", async (req, res) => {
-  const { roomId, password } = req.body
-  if (!roomId || !password) return res.status(400).json({ error: "Room ID and password required" })
-
-  // For demo purposes, use a simple password check
-  // In production, you'd check against a database of room passwords
-  const ROOM_PASSWORD = process.env.ROOM_PASSWORD || "default-room-password"
-
-  if (password !== ROOM_PASSWORD) {
-    return res.status(401).json({ error: "Invalid room password" })
-  }
-
-  const token = jwt.sign({ roomId }, JWT_SECRET, { expiresIn: "24h" })
-  res.cookie("room_token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    path: "/"
-  })
-  res.json({ message: "Room access granted", token, roomId })
-})
-
-// Verify room access
-app.get("/api/verify-room", (req, res) => {
-  const token = req.cookies.room_token;
-  if (!token) return res.status(401).json({ error: "Not authenticated" });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { roomId: string };
-    res.json({ authenticated: true, roomId: decoded.roomId });
-  } catch (error) {
-    res.status(401).json({ error: "Invalid token" });
-  }
-});
 
 // Set session cookie in HTTP middleware before Socket.IO handshake
 app.post("/api/session", (req, res) => {
