@@ -1,4 +1,4 @@
- import express, { Response, Request } from "express"
+import express, { Response, Request } from "express"
 import dotenv from "dotenv"
 import http from "http"
 import cors from "cors"
@@ -19,68 +19,40 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 
-// In-memory users for demo (use DB in production)
-interface AuthUser {
-  id: string
-  email: string
-  password: string
-  username?: string
-}
-let users: AuthUser[] = []
-
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 
-// JWT Auth endpoints
-app.post("/api/signup", async (req, res) => {
-  const { email, password, username } = req.body
-  if (!email || !password) return res.status(400).json({ error: "Email and password required" })
+// Room authentication endpoint
+app.post("/api/auth-room", async (req, res) => {
+  const { roomId, password } = req.body
+  if (!roomId || !password) return res.status(400).json({ error: "Room ID and password required" })
 
-  const existingUser = users.find(u => u.email === email)
-  if (existingUser) return res.status(400).json({ error: "User already exists" })
+  // For demo purposes, use a simple password check
+  // In production, you'd check against a database of room passwords
+  const ROOM_PASSWORD = process.env.ROOM_PASSWORD || "default-room-password"
 
-  const hashedPassword = await bcrypt.hash(password, 10)
-  const user: AuthUser = { id: uuidv4(), email, password: hashedPassword, username }
-  users.push(user)
-
-  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "1h" })
-  res.cookie("jwt_token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 1000 * 60 * 60, // 1 hour
-    path: "/"
-  })
-  res.json({ message: "User created", token })
-})
-
-app.post("/api/login", async (req, res) => {
-  const { email, password } = req.body
-  if (!email || !password) return res.status(400).json({ error: "Email and password required" })
-
-  const user = users.find(u => u.email === email)
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ error: "Invalid credentials" })
+  if (password !== ROOM_PASSWORD) {
+    return res.status(401).json({ error: "Invalid room password" })
   }
 
-  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "1h" })
-  res.cookie("jwt_token", token, {
+  const token = jwt.sign({ roomId }, JWT_SECRET, { expiresIn: "24h" })
+  res.cookie("room_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 1000 * 60 * 60, // 1 hour
+    maxAge: 1000 * 60 * 60 * 24, // 24 hours
     path: "/"
   })
-  res.json({ message: "Login successful", token })
+  res.json({ message: "Room access granted", token, roomId })
 })
 
-// Check auth endpoint
-app.get("/api/check-auth", (req, res) => {
-  const token = req.cookies.jwt_token;
+// Verify room access
+app.get("/api/verify-room", (req, res) => {
+  const token = req.cookies.room_token;
   if (!token) return res.status(401).json({ error: "Not authenticated" });
 
   try {
-    jwt.verify(token, JWT_SECRET);
-    res.json({ authenticated: true });
+    const decoded = jwt.verify(token, JWT_SECRET) as { roomId: string };
+    res.json({ authenticated: true, roomId: decoded.roomId });
   } catch (error) {
     res.status(401).json({ error: "Invalid token" });
   }
