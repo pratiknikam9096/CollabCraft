@@ -1,4 +1,4 @@
-import SplitterComponent from "@/components/SplitterComponent"
+import SplitterComponent from "@/context/SplitterComponent"
 import ConnectionStatusPage from "@/components/connection/ConnectionStatusPage"
 import WorkSpace from "@/components/workspace"
 import { useAppContext } from "@/context/AppContext"
