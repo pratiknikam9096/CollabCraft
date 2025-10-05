@@ -116,6 +116,7 @@ const FormComponent = () => {
                     Join
                 </button>
             </form>
+            
             <button
                 className="cursor-pointer select-none underline"
                 onClick={createNewRoomId}
